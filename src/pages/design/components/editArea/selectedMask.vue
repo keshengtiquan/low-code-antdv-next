@@ -6,12 +6,11 @@
           position: 'absolute',
           left: `${position.left}px`,
           top: `${position.top}px`,
-          border: '2px solid blue',
+          border: '2px solid #4096ff',
           pointerEvents: 'none',
           width: `${position.width}px`,
           height: `${position.height}px`,
           zIndex: 2,
-          borderRadius: 4,
           boxSizing: 'border-box',
         }"
       />
@@ -31,7 +30,7 @@
           style="
             color: #fff;
             padding: 2px 8px;
-            background-color: blue;
+            background-color: #4096ff;
             pointer-events: auto;
           "
         >
@@ -76,23 +75,34 @@ function updatePosition() {
   if (!node) return;
 
   requestAnimationFrame(() => {
-    // debugger
     const { top, left, width, height } = node.getBoundingClientRect();
-    const { top: containerTop, left: containerLeft } =
-      container.getBoundingClientRect();
+    const {
+      top: containerTop,
+      left: containerLeft,
+      width: containerWidth,
+      height: containerHeight,
+    } = container.getBoundingClientRect();
 
-    let labelTop = top - containerTop + container.scrollTop + height;
-    let labelLeft = left - containerLeft + width;
+    // 裁剪到容器边界内（防止 a-row gutter 负 margin 导致超出）
+    const relLeft = left - containerLeft + container.scrollLeft;
+    const relTop = top - containerTop + container.scrollTop;
+    const clampedLeft = Math.max(0, relLeft);
+    const clampedTop = Math.max(0, relTop);
+    const clampedWidth = Math.min(width, containerWidth - clampedLeft);
+    const clampedHeight = Math.min(height, containerHeight - clampedTop);
+
+    let labelTop = clampedTop + clampedHeight;
+    let labelLeft = clampedLeft + clampedWidth;
 
     if (labelTop <= 0) {
       labelTop -= -20;
     }
 
     position.value = {
-      top: top - containerTop + container.scrollTop,
-      left: left - containerLeft + container.scrollLeft,
-      width,
-      height,
+      top: clampedTop,
+      left: clampedLeft,
+      width: clampedWidth,
+      height: clampedHeight,
       labelTop,
       labelLeft,
     };
@@ -100,10 +110,33 @@ function updatePosition() {
 }
 const throttledUpdatePosition = throttle(updatePosition, 16);
 
+let targetObserver: ResizeObserver | null = null;
+let mutationObserver: MutationObserver | null = null;
+
 watch(
   () => props.componentId,
   () => {
+    targetObserver?.disconnect();
+    mutationObserver?.disconnect();
     updatePosition();
+    const targetNode = document.querySelector(
+      `[data-node-id='${props.componentId}']`,
+    );
+    if (targetNode) {
+      // 尺寸变化 → 遮罩重定位
+      targetObserver = new ResizeObserver(() => {
+        throttledUpdatePosition();
+      });
+      targetObserver.observe(targetNode);
+      // 位置变化（如 a-col offset/pull/push）→ 遮罩重定位
+      mutationObserver = new MutationObserver(() => {
+        throttledUpdatePosition();
+      });
+      mutationObserver.observe(targetNode, {
+        attributes: true,
+        attributeFilter: ["style", "class"],
+      });
+    }
   },
   { immediate: true },
 );
@@ -137,5 +170,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener("resize", resizeHandler);
   resizeObserver?.disconnect();
+  targetObserver?.disconnect();
+  mutationObserver?.disconnect();
 });
 </script>

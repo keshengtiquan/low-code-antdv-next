@@ -36,7 +36,7 @@ export const useSchema = defineStore("schemas", () => {
     return findParentById(id, schema.value.root);
   };
 
-  const addNode = (parentId: string, type: string): string => {
+  const addNode = (parentId: string, type: string, slotName = "default"): string => {
     const parent = findNode(parentId);
     if (!parent) return "";
 
@@ -44,12 +44,12 @@ export const useSchema = defineStore("schemas", () => {
       parent.slots = {};
     }
 
-    const defaultSlot = parent.slots.default;
-    const defaultChildren: PageNode[] = Array.isArray(defaultSlot)
-      ? defaultSlot
+    const targetSlot = parent.slots[slotName];
+    const targetChildren: PageNode[] = Array.isArray(targetSlot)
+      ? targetSlot
       : [];
-    if (!Array.isArray(defaultSlot)) {
-      parent.slots.default = defaultChildren;
+    if (!Array.isArray(targetSlot)) {
+      parent.slots[slotName] = targetChildren;
     }
 
     const newId = genId();
@@ -64,7 +64,7 @@ export const useSchema = defineStore("schemas", () => {
       newNode.slots = defaultSlots;
     }
 
-    defaultChildren.push(newNode);
+    targetChildren.push(newNode);
     // selectedNodeId.value = newId;
     return newId;
   };
@@ -75,6 +75,19 @@ export const useSchema = defineStore("schemas", () => {
     Object.assign(node.props, updates);
   };
 
+  const updateSlot = (id: string, slotName: string, value: PageNode[] | string): void => {
+    const node = findNode(id);
+    if (!node) return;
+    if (!node.slots) {
+      node.slots = {};
+    }
+    if (typeof value === "string" && !value) {
+      delete node.slots[slotName];
+    } else {
+      node.slots[slotName] = value;
+    }
+  };
+
   const removeNode = (id: string): void => {
     if (id === schema.value.root.nodeId) return;
     const parent = findParent(id);
@@ -82,7 +95,12 @@ export const useSchema = defineStore("schemas", () => {
     for (const slotName of Object.keys(parent.slots)) {
       const slotValue = parent.slots[slotName];
       if (typeof slotValue === "string") continue;
-      parent.slots[slotName] = slotValue.filter((c) => c.nodeId !== id);
+      const filtered = slotValue.filter((c) => c.nodeId !== id);
+      if (filtered.length > 0) {
+        parent.slots[slotName] = filtered;
+      } else {
+        delete parent.slots[slotName];
+      }
     }
     if (selectedNodeId.value === id) {
       selectedNodeId.value = null;
@@ -109,6 +127,7 @@ export const useSchema = defineStore("schemas", () => {
     findParent,
     addNode,
     updateNode,
+    updateSlot,
     removeNode,
     resetSchema,
     importSchema,

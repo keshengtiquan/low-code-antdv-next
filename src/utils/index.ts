@@ -54,9 +54,14 @@ function findPaletteItem(type: string): PaletteItem | undefined {
   return undefined;
 }
 
+export function getAvailableSlots(type: string): string[] {
+  const item = findPaletteItem(type);
+  return item?.availableSlots ?? [];
+}
+
 export function getDefaultProps(type: string): Record<string, unknown> {
   const item = findPaletteItem(type);
-  return item?.defaultProps ?? {};
+  return item?.props ?? {};
 }
 
 export function getDefaultSlots(

@@ -15,6 +15,5 @@ defineProps<{
     :style="{ color, fontSize, fontWeight, textAlign }"
   >
     {{ content }}
-    <slot />
   </component>
 </template>

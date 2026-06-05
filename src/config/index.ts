@@ -3,7 +3,10 @@ import type { PageNode } from "@/types/schema";
 export interface PaletteItem {
   type: string;
   label: string;
-  defaultProps: Record<string, unknown>;
+  props: Record<string, unknown>;
+  /** 组件支持的插槽名列表（用于在编辑区显示占位提示，即使未填充也能让用户看到可拖放区域） */
+  availableSlots?: string[];
+  /** 拖入时自动生成的默认插槽内容 */
   slots?: Record<string, (parentId: string) => PageNode[] | string>;
 }
 
@@ -17,9 +20,22 @@ export const paletteGroups: PaletteGroup[] = [
     name: "布局",
     components: [
       {
-        type: "container",
-        label: "容器",
-        defaultProps: { direction: "column", gap: 8 },
+        type: "a-flex",
+        label: "flex",
+        props: { gap: 8 },
+        availableSlots: ["default"],
+      },
+      {
+        type: "a-row",
+        label: "row",
+        props: { span: 24 },
+        availableSlots: ["default"],
+      },
+      {
+        type: "a-col",
+        label: "col",
+        props: { span: 12 },
+        availableSlots: ["default"],
       },
     ],
   },
@@ -29,12 +45,7 @@ export const paletteGroups: PaletteGroup[] = [
       {
         type: "text",
         label: "文本",
-        defaultProps: { content: "Text", tag: "p" },
-      },
-      {
-        type: "image",
-        label: "图片",
-        defaultProps: { src: "", alt: "" },
+        props: { content: "Text", tag: "span" },
       },
     ],
   },
@@ -44,32 +55,42 @@ export const paletteGroups: PaletteGroup[] = [
       {
         type: "a-button",
         label: "按钮",
-        defaultProps: { type: "primary" },
+        props: {},
+        availableSlots: ["default"],
         slots: {
           default: () => "按钮",
-          icon: (parentId) => [
-            {
-              nodeId: `${parentId}_btn_icon`,
-              type: "icon",
-              props: { icon: "icon-add" },
-            },
-          ],
         },
       },
       {
         type: "a-card",
         label: "卡片",
-        defaultProps: { title: "Card Title" },
+        props: { title: "Card Title" },
+        availableSlots: ["default", "title", "extra", "actions", "cover"],
+        slots: {
+          // default: () => "内容区域",
+          // extra: (parentId) => [
+          //   {
+          //     nodeId: `${parentId}_card_extra`,
+          //     type: "a-button",
+          //     props: { type: "primary" },
+          //     slots: {
+          //       default: "plus",
+          //     }
+          //   }
+          // ]
+        }
       },
       {
         type: "a-input",
         label: "输入框",
-        defaultProps: { placeholder: "Please input" },
+        props: { placeholder: "Please input" },
+        availableSlots: ["default", "prefix", "suffix",],
       },
       {
         type: "a-table",
         label: "表格",
-        defaultProps: {},
+        props: {},
+        availableSlots: ["default", "title", "footer"],
       },
     ],
   },

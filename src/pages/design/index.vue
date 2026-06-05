@@ -23,9 +23,9 @@
 
       <a-splitter-panel :default-size="320" :min="240" :max="500">
         <div class="panel panel-right">
-          <div class="panel-header">右侧面板</div>
+          <div class="panel-header">属性面板</div>
           <div class="panel-body">
-            <!-- 右侧内容区域 -->
+            <PropertyPanel />
           </div>
         </div>
       </a-splitter-panel>
@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import ComponentPalette from "@/pages/design/components/componentPalette/index.vue";
 import EditArea from "@/pages/design/components/editArea/index.vue";
+import PropertyPanel from "@/pages/design/components/propertyPanel/index.vue";
 </script>
 
 <style scoped>

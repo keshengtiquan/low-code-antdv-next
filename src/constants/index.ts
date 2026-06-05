@@ -3,4 +3,7 @@ export const CONTAINER_TYPES = new Set([
   "container",
   "a-card",
   "a-form",
+  "a-flex",
+  "a-row",
+  "a-col",
 ]);
