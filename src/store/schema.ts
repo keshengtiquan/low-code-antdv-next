@@ -132,4 +132,6 @@ export const useSchema = defineStore("schemas", () => {
     resetSchema,
     importSchema,
   };
+}, {
+  persist: true,
 });

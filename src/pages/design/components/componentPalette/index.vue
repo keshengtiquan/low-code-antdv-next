@@ -5,13 +5,15 @@ import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 import TreeView from "./TreeView.vue";
+import ScriptEditor from "./ScriptEditor.vue";
 
-type TabKey = "components" | "code" | "tree";
+type TabKey = "components" | "code" | "tree" | "scripts";
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: "components", label: "组件" },
   { key: "code", label: "代码" },
   { key: "tree", label: "树形" },
+  { key: "scripts", label: "脚本" },
 ];
 
 const activeTab = ref<TabKey>("components");
@@ -69,6 +71,11 @@ function onDragStart(e: DragEvent, item: PaletteItem): void {
       <!-- 树形视图 -->
       <div v-else-if="activeTab === 'tree'" class="tree-tab">
         <TreeView />
+      </div>
+
+      <!-- 脚本视图 -->
+      <div v-else-if="activeTab === 'scripts'" class="scripts-tab">
+        <ScriptEditor />
       </div>
     </div>
   </div>
@@ -147,5 +154,10 @@ function onDragStart(e: DragEvent, item: PaletteItem): void {
 .tree-tab {
   height: 100%;
   overflow: auto;
+}
+
+.scripts-tab {
+  height: 100%;
+  overflow: hidden;
 }
 </style>

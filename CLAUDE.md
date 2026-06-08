@@ -12,7 +12,7 @@ pnpm preview      # 本地预览生产构建
 
 ## 架构
 
-这是一个**低代码页面搭建工具**，基于 Vue 3 + TypeScript + Vite 8 构建。使用 `antdv-next`（Ant Design Vue next）作为 UI 组件库，`@antdv-next/tailwind` + Tailwind CSS 4 处理样式。状态管理使用 Pinia，并启用了 `pinia-plugin-persistedstate` 持久化插件。路由使用 hash 模式。
+这是一个**低代码页面搭建工具**，基于 Vue 3 + TypeScript + Vite 8 构建。使用 `antdv-next`（Ant Design Vue next）作为 UI 组件库，图标库为 `@antdv-next/icons`，`@antdv-next/tailwind` + Tailwind CSS 4 处理样式。状态管理使用 Pinia，并启用了 `pinia-plugin-persistedstate` 持久化插件。路由使用 hash 模式。
 
 ### 核心概念：PageSchema 组件树
 

@@ -13,7 +13,10 @@
 
       <a-splitter-panel :min="300">
         <div class="panel panel-center">
-          <div class="panel-header">中间面板</div>
+          <div class="panel-header">
+            <span>中间面板</span>
+            <a-button size="small" @click="handlePreview">预览</a-button>
+          </div>
           <div class="panel-body">
             <!-- 中间内容区域 -->
             <EditArea />
@@ -34,9 +37,17 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from "vue-router";
 import ComponentPalette from "@/pages/design/components/componentPalette/index.vue";
 import EditArea from "@/pages/design/components/editArea/index.vue";
 import PropertyPanel from "@/pages/design/components/propertyPanel/index.vue";
+
+const router = useRouter();
+
+const handlePreview = () => {
+  const route = router.resolve("/preview");
+  window.open(route.href, "_blank");
+};
 </script>
 
 <style scoped>
@@ -63,6 +74,9 @@ import PropertyPanel from "@/pages/design/components/propertyPanel/index.vue";
   border-bottom: 1px solid var(--color-border, #e8e8e8);
   flex-shrink: 0;
   background: var(--color-bg-elevated, #fafafa);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .panel-body {

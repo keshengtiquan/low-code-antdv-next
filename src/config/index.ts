@@ -30,6 +30,22 @@ export const paletteGroups: PaletteGroup[] = [
         label: "row",
         props: { span: 24 },
         availableSlots: ["default"],
+        slots: {
+          default: (parentId) => [
+            {
+              nodeId: `${parentId}_a-col1`,
+              type: "a-col",
+              props: { span: 12 },
+              availableSlots: ["default"],
+            },
+            {
+              nodeId: `${parentId}_a-col2`,
+              type: "a-col",
+              props: { span: 12 },
+              availableSlots: ["default"],
+            },
+          ],
+        },
       },
       {
         type: "a-col",
@@ -78,13 +94,13 @@ export const paletteGroups: PaletteGroup[] = [
           //     }
           //   }
           // ]
-        }
+        },
       },
       {
         type: "a-input",
         label: "输入框",
         props: { placeholder: "Please input" },
-        availableSlots: ["default", "prefix", "suffix",],
+        availableSlots: ["default", "prefix", "suffix"],
       },
       {
         type: "a-table",

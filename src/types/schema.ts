@@ -12,6 +12,11 @@ export interface PageNode {
   slots?: Record<string, PageNode[] | string>
 }
 
+export interface ScriptFile {
+  name: string
+  code: string
+}
+
 /** Top-level page descriptor. */
 export interface PageSchema {
   /** Schema format version for future migration. */
@@ -23,4 +28,6 @@ export interface PageSchema {
   }
   /** Root node of the component tree. */
   root: PageNode
+  /** Inline JavaScript files executed in order in the preview page. */
+  inlineScripts?: ScriptFile[]
 }
