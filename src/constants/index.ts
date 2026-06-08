@@ -6,4 +6,5 @@ export const CONTAINER_TYPES = new Set([
   "a-flex",
   "a-row",
   "a-col",
+  "a-form-item",
 ]);

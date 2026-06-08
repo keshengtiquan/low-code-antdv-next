@@ -8,6 +8,8 @@ export interface PaletteItem {
   availableSlots?: string[];
   /** 拖入时自动生成的默认插槽内容 */
   slots?: Record<string, (parentId: string) => PageNode[] | string>;
+  /** 允许追加子节点的插槽名列表（即使已填充也显示 compact 占位符作为拖放目标） */
+  appendableSlots?: string[];
 }
 
 export interface PaletteGroup {
@@ -53,6 +55,7 @@ export const paletteGroups: PaletteGroup[] = [
         props: { span: 12 },
         availableSlots: ["default"],
       },
+
     ],
   },
   {
@@ -64,6 +67,42 @@ export const paletteGroups: PaletteGroup[] = [
         props: { content: "Text", tag: "span" },
       },
     ],
+  },
+  {
+    name: "数据录入",
+    components: [
+      {
+        type: "a-form",
+        label: "表单",
+        props: { layout: "horizontal" },
+        availableSlots: ["default"],
+        appendableSlots: ["default"],
+        slots: {
+          default: (parentId) => [
+            {
+              nodeId: `${parentId}_fi1`,
+              type: "a-form-item",
+              props: { label: "字段", name: "field" },
+              availableSlots: ["default"],
+              slots: {},
+            },
+          ],
+        },
+      },
+      {
+        type: "a-form-item",
+        label: "表单项",
+        props: { label: "字段", name: "field" },
+        availableSlots: ["default", "label",],
+        slots: {},
+      },
+      {
+        type: "a-input",
+        label: "输入框",
+        props: { placeholder: "Please input" },
+        availableSlots: ["default"],
+      },
+    ]
   },
   {
     name: "AntdV组件",
@@ -96,18 +135,14 @@ export const paletteGroups: PaletteGroup[] = [
           // ]
         },
       },
-      {
-        type: "a-input",
-        label: "输入框",
-        props: { placeholder: "Please input" },
-        availableSlots: ["default", "prefix", "suffix"],
-      },
+
       {
         type: "a-table",
         label: "表格",
         props: {},
         availableSlots: ["default", "title", "footer"],
       },
+
     ],
   },
 ];

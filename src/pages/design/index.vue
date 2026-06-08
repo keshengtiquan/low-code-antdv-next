@@ -41,8 +41,12 @@ import { useRouter } from "vue-router";
 import ComponentPalette from "@/pages/design/components/componentPalette/index.vue";
 import EditArea from "@/pages/design/components/editArea/index.vue";
 import PropertyPanel from "@/pages/design/components/propertyPanel/index.vue";
+import { provideRefsMap } from "@/composables/useRefsMap";
 
 const router = useRouter();
+
+// 为设计时渲染器的递归 ref 注册提供注入链路
+provideRefsMap();
 
 const handlePreview = () => {
   const route = router.resolve("/preview");

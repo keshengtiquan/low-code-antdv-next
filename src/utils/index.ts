@@ -59,6 +59,11 @@ export function getAvailableSlots(type: string): string[] {
   return item?.availableSlots ?? [];
 }
 
+export function getAppendableSlots(type: string): string[] {
+  const item = findPaletteItem(type);
+  return item?.appendableSlots ?? [];
+}
+
 export function getDefaultProps(type: string): Record<string, unknown> {
   const item = findPaletteItem(type);
   return item?.props ?? {};

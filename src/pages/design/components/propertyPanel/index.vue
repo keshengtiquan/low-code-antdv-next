@@ -3,10 +3,14 @@ import type { Component } from "vue";
 import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+import ScriptEditor from "@/pages/design/components/componentPalette/ScriptEditor.vue";
 import AFlexEditor from "./editors/AFlexEditor.vue";
 import ARowEditor from "./editors/ARowEditor.vue";
 import AColEditor from "./editors/AColEditor.vue";
 import AButtonEditor from "./editors/AButtonEditor.vue";
+import AFormEditor from "./editors/AFormEditor.vue";
+import AFormItemEditor from "./editors/AFormItemEditor.vue";
+import AInputEditor from "./editors/AInputEditor.vue";
 
 /** 类型 → 属性编辑器组件 */
 const editorRegistry: Record<string, Component> = {
@@ -14,6 +18,9 @@ const editorRegistry: Record<string, Component> = {
   "a-row": ARowEditor,
   "a-col": AColEditor,
   "a-button": AButtonEditor,
+  "a-form": AFormEditor,
+  "a-form-item": AFormItemEditor,
+  "a-input": AInputEditor,
 };
 
 const schemaStore = useSchema();
@@ -23,6 +30,11 @@ const { updateNode } = schemaStore;
 function setDomId(val: string) {
   if (!selectedNode.value) return;
   updateNode(selectedNode.value.nodeId, { id: val || undefined });
+}
+
+function setRef(val: string) {
+  if (!selectedNode.value) return;
+  updateNode(selectedNode.value.nodeId, { ref: val || undefined });
 }
 
 const editorComponent = computed<Component | null>(() => {
@@ -39,6 +51,12 @@ const typeLabel = computed(() => {
 
 <template>
   <div class="property-panel">
+    <!-- 脚本管理 -->
+    <div class="section">
+      <div class="section-title">脚本</div>
+      <ScriptEditor />
+    </div>
+
     <!-- 未选中任何节点 -->
     <div v-if="!selectedNode" class="empty-state">
       请在画布中选择一个节点
@@ -61,6 +79,14 @@ const typeLabel = computed(() => {
             placeholder="设置 id"
             allow-clear
             @change="(e: InputEvent) => setDomId((e.target as HTMLInputElement).value)"
+          />
+          <span class="info-label">Ref</span>
+          <a-input
+            size="small"
+            :value="selectedNode.props.ref"
+            placeholder="设置 ref"
+            allow-clear
+            @change="(e: InputEvent) => setRef((e.target as HTMLInputElement).value)"
           />
         </div>
       </div>
