@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
-import { ref } from "vue";
+import { ref, watch, onBeforeUnmount } from "vue";
 import { PlusOutlined } from "@antdv-next/icons";
 import MonacoEditor from "@/components/MonacoEditor.vue";
 
@@ -11,7 +11,9 @@ const { schema } = storeToRefs(schemaStore);
 const editingIndex = ref<number | null>(null);
 const createModalOpen = ref(false);
 const newFileName = ref("");
-
+const currentCode = ref("");
+const isModified = ref(false);
+const monacoRef = ref<InstanceType<typeof MonacoEditor> | null>(null);
 function ensureInlineScripts() {
   if (!schema.value.inlineScripts) {
     schema.value.inlineScripts = [];
@@ -44,6 +46,47 @@ function deleteFile(index: number): void {
   }
   ensureInlineScripts().splice(index, 1);
 }
+
+function onCodeChange(code: string): void {
+  if (editingIndex.value === null) return;
+  const originalCode = schema.value.inlineScripts?.[editingIndex.value]?.code ?? "";
+  isModified.value = code !== originalCode;
+}
+
+function handleSave(): void {
+  if (editingIndex.value === null) return;
+  const code = monacoRef.value?.getValue() ?? "";
+  schema.value.inlineScripts![editingIndex.value].code = code;
+  isModified.value = false;
+}
+
+function handleSaveAndClose(): void {
+  handleSave();
+  editingIndex.value = null;
+}
+
+/** DOM 级拦截 Ctrl+S，阻止浏览器默认保存页面行为 */
+function onKeyDown(e: KeyboardEvent): void {
+  if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+    e.preventDefault();
+    handleSave();
+  }
+}
+
+// 文件打开/关闭时：加载代码并绑定/解绑 Ctrl+S
+watch(editingIndex, (newIndex) => {
+  if (newIndex !== null) {
+    currentCode.value = schema.value.inlineScripts?.[newIndex]?.code ?? "";
+    isModified.value = false;
+    document.addEventListener("keydown", onKeyDown);
+  } else {
+    document.removeEventListener("keydown", onKeyDown);
+  }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener("keydown", onKeyDown);
+});
 </script>
 
 <template>
@@ -87,16 +130,28 @@ function deleteFile(index: number): void {
       :open="editingIndex !== null"
       :title="schema.inlineScripts?.[editingIndex ?? -1]?.name || '编辑脚本'"
       placement="right"
-      :width="500"
+      :maskClosable="false"
+      :closable="false"
+      size="50%"
       @close="editingIndex = null"
     >
+    <template #title>
+      编辑【{{ schema.inlineScripts?.[editingIndex ?? -1]?.name || '编辑脚本' }}】
+      <span class="save-btn-wrapper">
+        <span v-if="isModified" class="unsaved-dot"></span>
+        <a-button size="small" color="default" variant="solid" @click="handleSaveAndClose">保存</a-button>
+      </span>
+    </template>
       <div
         v-if="editingIndex !== null"
         class="drawer-code-editor-wrapper"
       >
         <MonacoEditor
-          v-model="schema.inlineScripts![editingIndex!].code"
+          ref="monacoRef"
+          :model-value="currentCode"
           language="javascript"
+          :options="{fontSize: 16}"
+          @update:model-value="onCodeChange"
         />
       </div>
     </a-drawer>
@@ -170,5 +225,23 @@ function deleteFile(index: number): void {
 .drawer-code-editor-wrapper:focus-within {
   border-color: #1890ff;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+}
+
+/* 保存按钮右上角红色未保存圆点 */
+.save-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.unsaved-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  background: #ff4d4f;
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
 }
 </style>

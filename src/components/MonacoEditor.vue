@@ -93,6 +93,12 @@ watch(
     }
   },
 );
+
+defineExpose({
+  getValue: () => editorInstance?.getValue() ?? "",
+  setValue: (value: string) => editorInstance?.setValue(value),
+  getEditor: () => editorInstance,
+});
 </script>
 
 <template>

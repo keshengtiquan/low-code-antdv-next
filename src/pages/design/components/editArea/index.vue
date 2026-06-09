@@ -173,7 +173,6 @@ const handleMouseOver = (e: MouseEvent): void => {
   const path = e.composedPath();
   for (let i = 0; i < path.length; i++) {
     const ele = path[i] as HTMLElement;
-    console.log(ele?.dataset);
     const nodeId = ele?.dataset?.nodeId;
     if (nodeId) {
       hoverNodeId.value = nodeId;
