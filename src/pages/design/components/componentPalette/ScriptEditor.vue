@@ -58,6 +58,7 @@ function handleSave(): void {
   const code = monacoRef.value?.getValue() ?? "";
   schema.value.inlineScripts![editingIndex.value].code = code;
   isModified.value = false;
+  editingIndex.value = null;
 }
 
 function handleSaveAndClose(): void {

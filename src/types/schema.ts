@@ -10,6 +10,8 @@ export interface PageNode {
   style?: Record<string, string>
   /** Slot content keyed by slot name. Value can be PageNode[] or a plain text string. */
   slots?: Record<string, PageNode[] | string>
+  /** Events to forward from this component to the script event bus. e.g. ["click", "change"] */
+  events?: string[]
 }
 
 export interface ScriptFile {

@@ -11,6 +11,10 @@ import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import PreviewRenderer from "./components/previewRenderer.vue";
 import { provideRefsMap } from "@/composables/useRefsMap";
+import {
+  provideEventManager,
+  createEventProxy,
+} from "@/composables/useEventProxy";
 
 const { schema } = storeToRefs(useSchema());
 const { message, modal, notification } = App.useApp();
@@ -22,6 +26,9 @@ const app = instance?.appContext.app;
 
 // 创建共享的 ref 映射表，让递归 PreviewRenderer 中注册的组件 ref 可从根页面访问
 const refsMap = provideRefsMap();
+
+// 创建共享的事件管理器，让递归 PreviewRenderer 中组件的 emit 事件可被脚本监听
+const eventManager = provideEventManager();
 
 // 包装 proxy，将 $refs 访问委托到共享 ref 映射表
 const proxiedProxy = proxy
@@ -46,6 +53,32 @@ const context = {
   app,
   // 直接暴露 refs 映射表，方便 context.refs.xxx 访问
   refs: refsMap,
+
+  /** 监听指定 ref 组件的某个事件 */
+  $on(refName: string, event: string, handler: (...args: unknown[]) => void) {
+    let proxy = eventManager.get(refName);
+    if (!proxy) {
+      proxy = createEventProxy();
+      eventManager.set(refName, proxy);
+    }
+    proxy.$on(event, handler);
+  },
+
+  /** 移除指定 ref 组件的事件监听 */
+  $off(refName: string, event: string, handler?: (...args: unknown[]) => void) {
+    const proxy = eventManager.get(refName);
+    if (proxy) proxy.$off(event, handler);
+  },
+
+  /** 一次性监听指定 ref 组件的某个事件 */
+  $once(refName: string, event: string, handler: (...args: unknown[]) => void) {
+    let proxy = eventManager.get(refName);
+    if (!proxy) {
+      proxy = createEventProxy();
+      eventManager.set(refName, proxy);
+    }
+    proxy.$once(event, handler);
+  },
 };
 
 onMounted(() => {

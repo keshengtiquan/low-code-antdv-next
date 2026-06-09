@@ -46,7 +46,7 @@ export function isContainerType(type: string): boolean {
   return CONTAINER_TYPES.has(type);
 }
 
-function findPaletteItem(type: string): PaletteItem | undefined {
+export function findPaletteItem(type: string): PaletteItem | undefined {
   for (const group of paletteGroups) {
     const item = group.components.find((c) => c.type === type);
     if (item) return item;

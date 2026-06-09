@@ -3,6 +3,7 @@ import type { Component } from "vue";
 import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
+import { findPaletteItem } from "@/utils";
 import ScriptEditor from "@/pages/design/components/componentPalette/ScriptEditor.vue";
 import AFlexEditor from "./editors/AFlexEditor.vue";
 import ARowEditor from "./editors/ARowEditor.vue";
@@ -11,6 +12,7 @@ import AButtonEditor from "./editors/AButtonEditor.vue";
 import AFormEditor from "./editors/AFormEditor.vue";
 import AFormItemEditor from "./editors/AFormItemEditor.vue";
 import AInputEditor from "./editors/AInputEditor.vue";
+
 
 /** 类型 → 属性编辑器组件 */
 const editorRegistry: Record<string, Component> = {
@@ -36,6 +38,14 @@ function setRef(val: string) {
   if (!selectedNode.value) return;
   updateNode(selectedNode.value.nodeId, { ref: val || undefined });
 }
+
+/** 根据当前选中组件的类型，从配置中获取该组件支持的事件建议 */
+const eventSuggestions = computed(() => {
+  if (!selectedNode.value) return [];
+  const item = findPaletteItem(selectedNode.value.type);
+  if (!item?.events) return [];
+  return item.events.map(e => ({ label: e, value: e }));
+});
 
 const editorComponent = computed<Component | null>(() => {
   if (!selectedNode.value) return null;
@@ -102,6 +112,20 @@ const typeLabel = computed(() => {
         <div v-else class="no-editor">
           暂无 {{ selectedNode.type }} 的属性编辑器
         </div>
+      </div>
+
+      <!-- 事件 -->
+      <div class="section">
+        <div class="section-title">事件</div>
+        <a-select
+          mode="tags"
+          size="small"
+          style="width: 100%"
+          placeholder="输入事件名称，如 click、change"
+          :value="selectedNode.events ?? []"
+          :options="eventSuggestions"
+          @change="(vals: string[]) => schemaStore.updateEvents(selectedNode!.nodeId, vals)"
+        />
       </div>
     </template>
   </div>

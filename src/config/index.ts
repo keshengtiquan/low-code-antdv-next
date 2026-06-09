@@ -10,6 +10,8 @@ export interface PaletteItem {
   slots?: Record<string, (parentId: string) => PageNode[] | string>;
   /** 允许追加子节点的插槽名列表（即使已填充也显示 compact 占位符作为拖放目标） */
   appendableSlots?: string[];
+  /** 该组件支持的常见事件名，用于属性面板的事件建议列表 */
+  events?: string[];
 }
 
 export interface PaletteGroup {
@@ -101,6 +103,7 @@ export const paletteGroups: PaletteGroup[] = [
         label: "输入框",
         props: { placeholder: "Please input" },
         availableSlots: ["default"],
+        events: ["change", "input", "focus", "blur", "update:value", "pressEnter"],
       },
     ]
   },
@@ -112,6 +115,7 @@ export const paletteGroups: PaletteGroup[] = [
         label: "按钮",
         props: {},
         availableSlots: ["default"],
+        events: ["click", "dblclick"],
         slots: {
           default: () => "按钮",
         },
@@ -141,6 +145,7 @@ export const paletteGroups: PaletteGroup[] = [
         label: "表格",
         props: {},
         availableSlots: ["default", "title", "footer"],
+        events: ["change", "expand"],
       },
 
     ],

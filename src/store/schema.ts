@@ -107,6 +107,16 @@ export const useSchema = defineStore("schemas", () => {
     }
   };
 
+  const updateEvents = (id: string, events: string[]): void => {
+    const node = findNode(id);
+    if (!node) return;
+    if (events.length > 0) {
+      node.events = events;
+    } else {
+      delete node.events;
+    }
+  };
+
   const resetSchema = (): void => {
     schema.value = createEmptySchema();
     selectedNodeId.value = null;
@@ -128,6 +138,7 @@ export const useSchema = defineStore("schemas", () => {
     addNode,
     updateNode,
     updateSlot,
+    updateEvents,
     removeNode,
     resetSchema,
     importSchema,
