@@ -3,6 +3,7 @@ import { computed } from "vue";
 import type { PageNode } from "@/types/schema";
 import { resolveComponentType } from "@/pages/design/components/editArea/components/registry";
 import { useRefsMap } from "@/composables/useRefsMap";
+import { useFormModelBinding } from "@/composables/useFormModelBinding";
 
 const props = defineProps<{
   node: PageNode;
@@ -29,13 +30,16 @@ function handleRef(el: unknown) {
     delete refsMap[name];
   }
 }
+
+// a-form → a-form-item → 输入组件的 model 和 v-model 自动绑定
+const { finalProps } = useFormModelBinding(props, filteredProps);
 </script>
 
 <template>
   <component
     :is="component"
     :style="node.style"
-    v-bind="filteredProps"
+    v-bind="finalProps"
     :id="node.props.id"
     :ref="handleRef"
   >

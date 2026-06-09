@@ -7,6 +7,7 @@ import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import SlotPlaceholder from "./slotPlaceholder.vue";
 import { useRefsMap } from "@/composables/useRefsMap";
+import { useFormModelBinding } from "@/composables/useFormModelBinding";
 
 const props = defineProps<{
   node: PageNode;
@@ -39,6 +40,9 @@ function handleRef(el: unknown) {
 
 const { updateNode } = schemaStore;
 
+// a-form → a-form-item → 输入组件的 model 和 v-model 自动绑定
+const { finalProps } = useFormModelBinding(props, filteredProps);
+
 /** 组件支持但尚未填充的插槽名列表 */
 const unfilledSlots = computed(() => {
   const available = getAvailableSlots(props.node.type);
@@ -48,7 +52,8 @@ const unfilledSlots = computed(() => {
     if (filled.includes(s)) return false;
     // 如果该插槽名对应的 prop 已有有效值，则不再显示插槽占位（如 a-card 的 title）
     const propValue = props.node.props?.[s];
-    if (propValue !== undefined && propValue !== null && propValue !== "") return false;
+    if (propValue !== undefined && propValue !== null && propValue !== "")
+      return false;
     return true;
   });
 });
@@ -64,7 +69,7 @@ const isSelected = computed(() => selectedNodeId.value === props.node.nodeId);
     :is="component"
     :data-node-id="node.nodeId"
     :style="node.style"
-    v-bind="filteredProps"
+    v-bind="finalProps"
     @update:value="(val: unknown) => updateNode(node.nodeId, { value: val })"
     :id="node.props.id"
     :ref="handleRef"
