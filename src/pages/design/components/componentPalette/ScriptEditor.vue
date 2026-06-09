@@ -3,6 +3,7 @@ import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import { ref } from "vue";
 import { PlusOutlined } from "@antdv-next/icons";
+import MonacoEditor from "@/components/MonacoEditor.vue";
 
 const schemaStore = useSchema();
 const { schema } = storeToRefs(schemaStore);
@@ -89,14 +90,15 @@ function deleteFile(index: number): void {
       :width="500"
       @close="editingIndex = null"
     >
-      <textarea
+      <div
         v-if="editingIndex !== null"
-        class="drawer-code-editor"
-        :value="schema.inlineScripts![editingIndex!].code"
-        placeholder="在此编写 JS 代码"
-        spellcheck="false"
-        @input="(e) => { schema!.inlineScripts![editingIndex!].code = (e.target as HTMLTextAreaElement).value }"
-      ></textarea>
+        class="drawer-code-editor-wrapper"
+      >
+        <MonacoEditor
+          v-model="schema.inlineScripts![editingIndex!].code"
+          language="javascript"
+        />
+      </div>
     </a-drawer>
   </div>
 </template>
@@ -158,21 +160,14 @@ function deleteFile(index: number): void {
 }
 
 /* Drawer 中的编辑器 */
-.drawer-code-editor {
-  width: 100%;
+.drawer-code-editor-wrapper {
   height: calc(100vh - 110px);
-  padding: 12px;
   border: 1px solid #d9d9d9;
   border-radius: 6px;
-  font-family: "SF Mono", "Monaco", "Menlo", monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  resize: none;
-  outline: none;
-  tab-size: 2;
+  overflow: hidden;
 }
 
-.drawer-code-editor:focus {
+.drawer-code-editor-wrapper:focus-within {
   border-color: #1890ff;
   box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
