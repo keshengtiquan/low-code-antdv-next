@@ -4,6 +4,7 @@ import {
   findNodeById,
   findParentById,
   genId,
+  getAvailableSlots,
   getDefaultSlots,
   getDefaultProps,
 } from "@/utils";
@@ -64,6 +65,12 @@ export const useSchema = defineStore("schemas", () => {
       newNode.slots = defaultSlots;
     }
 
+    // 新节点默认隐藏所有非 default 插槽的占位符
+    const nonDefaultSlots = getAvailableSlots(type).filter((s) => s !== "default");
+    if (nonDefaultSlots.length > 0) {
+      newNode.hiddenSlots = nonDefaultSlots;
+    }
+
     targetChildren.push(newNode);
     // selectedNodeId.value = newId;
     return newId;
@@ -107,6 +114,23 @@ export const useSchema = defineStore("schemas", () => {
     }
   };
 
+  const toggleSlotVisibility = (id: string, slotName: string): void => {
+    const node = findNode(id);
+    if (!node) return;
+    if (!node.hiddenSlots) {
+      node.hiddenSlots = [];
+    }
+    const idx = node.hiddenSlots.indexOf(slotName);
+    if (idx >= 0) {
+      node.hiddenSlots.splice(idx, 1);
+      if (node.hiddenSlots.length === 0) {
+        delete node.hiddenSlots;
+      }
+    } else {
+      node.hiddenSlots.push(slotName);
+    }
+  };
+
   const updateEvents = (id: string, events: string[]): void => {
     const node = findNode(id);
     if (!node) return;
@@ -139,6 +163,7 @@ export const useSchema = defineStore("schemas", () => {
     updateNode,
     updateSlot,
     updateEvents,
+    toggleSlotVisibility,
     removeNode,
     resetSchema,
     importSchema,

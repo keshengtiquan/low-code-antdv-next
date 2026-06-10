@@ -47,9 +47,12 @@ const { finalProps } = useFormModelBinding(props, filteredProps);
 const unfilledSlots = computed(() => {
   const available = getAvailableSlots(props.node.type);
   const filled = props.node.slots ? Object.keys(props.node.slots) : [];
+  const hidden = props.node.hiddenSlots ?? [];
   return available.filter((s) => {
     // 已填充插槽内容的，不再显示占位
     if (filled.includes(s)) return false;
+    // 用户手动隐藏的插槽占位
+    if (hidden.includes(s)) return false;
     // 如果该插槽名对应的 prop 已有有效值，则不再显示插槽占位（如 a-card 的 title）
     const propValue = props.node.props?.[s];
     if (propValue !== undefined && propValue !== null && propValue !== "")

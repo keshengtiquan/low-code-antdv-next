@@ -12,6 +12,8 @@ export interface PageNode {
   slots?: Record<string, PageNode[] | string>
   /** Events to forward from this component to the script event bus. e.g. ["click", "change"] */
   events?: string[]
+  /** Slot names whose unfilled placeholder should not render. Filled slots are unaffected. */
+  hiddenSlots?: string[]
 }
 
 export interface ScriptFile {

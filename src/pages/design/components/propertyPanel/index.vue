@@ -3,7 +3,7 @@ import type { Component } from "vue";
 import { useSchema } from "@/store/schema";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
-import { findPaletteItem } from "@/utils";
+import { findPaletteItem, getAvailableSlots } from "@/utils";
 import ScriptEditor from "@/pages/design/components/componentPalette/ScriptEditor.vue";
 import AFlexEditor from "./editors/AFlexEditor.vue";
 import ARowEditor from "./editors/ARowEditor.vue";
@@ -27,7 +27,7 @@ const editorRegistry: Record<string, Component> = {
 
 const schemaStore = useSchema();
 const { selectedNode } = storeToRefs(schemaStore);
-const { updateNode } = schemaStore;
+const { updateNode, toggleSlotVisibility } = schemaStore;
 
 function setDomId(val: string) {
   if (!selectedNode.value) return;
@@ -57,6 +57,19 @@ const typeLabel = computed(() => {
   // 可以从 config 里查找 label，这里先简单返回 type
   return selectedNode.value.type;
 });
+
+/** 非 default 的可用插槽名列表 */
+const nonDefaultSlots = computed(() => {
+  if (!selectedNode.value) return [];
+  const available = getAvailableSlots(selectedNode.value.type);
+  return available.filter((s) => s !== "default");
+});
+
+/** 检查指定插槽是否可见（不在 hiddenSlots 中） */
+function isSlotVisible(slotName: string): boolean {
+  if (!selectedNode.value) return true;
+  return !(selectedNode.value.hiddenSlots ?? []).includes(slotName);
+}
 </script>
 
 <template>
@@ -111,6 +124,25 @@ const typeLabel = computed(() => {
         />
         <div v-else class="no-editor">
           暂无 {{ selectedNode.type }} 的属性编辑器
+        </div>
+      </div>
+
+      <!-- 插槽可见性 -->
+      <div v-if="nonDefaultSlots.length > 0" class="section">
+        <div class="section-title">插槽</div>
+        <div class="prop-editor">
+          <div
+            v-for="slotName in nonDefaultSlots"
+            :key="slotName"
+            class="prop-row"
+          >
+            <label class="prop-label">{{ slotName }}</label>
+            <a-switch
+              :checked="isSlotVisible(slotName)"
+              size="small"
+              @change="() => toggleSlotVisibility(selectedNode!.nodeId, slotName)"
+            />
+          </div>
         </div>
       </div>
 
@@ -186,5 +218,24 @@ const typeLabel = computed(() => {
   color: #bbb;
   font-size: 13px;
   padding: 8px 0;
+}
+
+.prop-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.prop-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.prop-label {
+  font-size: 13px;
+  color: #555;
+  flex-shrink: 0;
 }
 </style>
