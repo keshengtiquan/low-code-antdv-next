@@ -49,7 +49,8 @@ function deleteFile(index: number): void {
 
 function onCodeChange(code: string): void {
   if (editingIndex.value === null) return;
-  const originalCode = schema.value.inlineScripts?.[editingIndex.value]?.code ?? "";
+  const originalCode =
+    schema.value.inlineScripts?.[editingIndex.value]?.code ?? "";
   isModified.value = code !== originalCode;
 }
 
@@ -106,9 +107,14 @@ onBeforeUnmount(() => {
     >
       <span class="file-index">{{ index + 1 }}</span>
       <span class="file-name" @click="openFile(index)">{{ file.name }}</span>
-      <a-button size="small" type="link" danger @click="deleteFile(index)">删除</a-button>
+      <a-button size="small" type="link" danger @click="deleteFile(index)"
+        >删除</a-button
+      >
     </div>
-    <div v-if="!(schema.inlineScripts && schema.inlineScripts.length > 0)" class="empty-hint">
+    <div
+      v-if="!(schema.inlineScripts && schema.inlineScripts.length > 0)"
+      class="empty-hint"
+    >
       暂无内联 JS 文件，点击 + 新建
     </div>
 
@@ -133,25 +139,30 @@ onBeforeUnmount(() => {
       placement="right"
       :maskClosable="false"
       :closable="false"
-      size="50%"
+      size="70%"
       @close="editingIndex = null"
     >
-    <template #title>
-      编辑【{{ schema.inlineScripts?.[editingIndex ?? -1]?.name || '编辑脚本' }}】
-      <span class="save-btn-wrapper">
-        <span v-if="isModified" class="unsaved-dot"></span>
-        <a-button size="small" color="default" variant="solid" @click="handleSaveAndClose">保存</a-button>
-      </span>
-    </template>
-      <div
-        v-if="editingIndex !== null"
-        class="drawer-code-editor-wrapper"
-      >
+      <template #title>
+        编辑【{{
+          schema.inlineScripts?.[editingIndex ?? -1]?.name || "编辑脚本"
+        }}】
+        <span class="save-btn-wrapper">
+          <span v-if="isModified" class="unsaved-dot"></span>
+          <a-button
+            size="small"
+            color="default"
+            variant="solid"
+            @click="handleSaveAndClose"
+            >保存</a-button
+          >
+        </span>
+      </template>
+      <div v-if="editingIndex !== null" class="drawer-code-editor-wrapper">
         <MonacoEditor
           ref="monacoRef"
           :model-value="currentCode"
           language="javascript"
-          :options="{fontSize: 16}"
+          :options="{ fontSize: 16 }"
           @update:model-value="onCodeChange"
         />
       </div>
@@ -244,5 +255,8 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   z-index: 1;
   pointer-events: none;
+}
+:deep(.ant-drawer .ant-drawer-body) {
+  padding: 10px;
 }
 </style>

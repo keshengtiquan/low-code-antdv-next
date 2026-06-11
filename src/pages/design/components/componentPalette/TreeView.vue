@@ -5,6 +5,7 @@
       :selected-node-id="selectedNodeId"
       :depth="0"
       @select="handleSelect"
+      @delete="handleDelete"
     />
   </div>
 </template>
@@ -16,10 +17,14 @@ import TreeNode from "./TreeNode.vue";
 
 const schemaStore = useSchema();
 const { schema, selectedNodeId } = storeToRefs(schemaStore);
-const { selectNode } = schemaStore;
+const { selectNode, removeNode } = schemaStore;
 
 function handleSelect(nodeId: string) {
   selectNode(nodeId);
+}
+
+function handleDelete(nodeId: string) {
+  removeNode(nodeId);
 }
 </script>
 

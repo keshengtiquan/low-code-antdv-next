@@ -11,11 +11,19 @@
         class="tree-toggle"
         @click.stop="expanded = !expanded"
       >
-        {{ expanded ? '▾' : '▸' }}
+        {{ expanded ? "▾" : "▸" }}
       </span>
       <span v-else class="tree-toggle tree-toggle-placeholder" />
       <span class="tree-type">{{ node.type }}</span>
       <span class="tree-id">{{ node.nodeId.slice(0, 8) }}</span>
+      <button
+        v-if="node.nodeId !== 'root'"
+        class="tree-delete-btn"
+        title="删除节点"
+        @click.stop="$emit('delete', node.nodeId)"
+      >
+        ×
+      </button>
     </div>
     <template v-if="expanded && hasChildren">
       <TreeNode
@@ -25,6 +33,7 @@
         :selected-node-id="selectedNodeId"
         :depth="depth + 1"
         @select="$emit('select', $event)"
+        @delete="$emit('delete', $event)"
       />
     </template>
   </div>
@@ -42,6 +51,7 @@ const props = defineProps<{
 
 defineEmits<{
   select: [nodeId: string];
+  delete: [nodeId: string];
 }>();
 
 const expanded = ref(true);
@@ -106,5 +116,43 @@ const hasChildren = computed(() => children.value.length > 0);
   font-size: 11px;
   color: #bbb;
   margin-left: auto;
+  transition: transform 0.15s ease;
+}
+
+.tree-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  width: 0;
+  padding: 0;
+  margin-left: 0;
+  border-radius: 2px;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    width 0.15s ease,
+    opacity 0.15s ease,
+    padding 0.15s ease,
+    margin-left 0.15s ease;
+}
+
+.tree-node-row:hover .tree-delete-btn {
+  width: 18px;
+  padding: 0;
+  margin-left: 4px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tree-delete-btn:hover {
+  color: #ff4d4f;
+  background-color: rgba(255, 77, 79, 0.1);
 }
 </style>

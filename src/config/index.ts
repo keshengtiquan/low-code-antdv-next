@@ -57,7 +57,6 @@ export const paletteGroups: PaletteGroup[] = [
         props: { span: 12 },
         availableSlots: ["default"],
       },
-
     ],
   },
   {
@@ -95,7 +94,7 @@ export const paletteGroups: PaletteGroup[] = [
         type: "a-form-item",
         label: "表单项",
         props: { label: "字段", name: "field" },
-        availableSlots: ["default", "label",],
+        availableSlots: ["default", "label"],
         slots: {},
       },
       {
@@ -103,9 +102,16 @@ export const paletteGroups: PaletteGroup[] = [
         label: "输入框",
         props: { placeholder: "Please input" },
         availableSlots: ["default"],
-        events: ["change", "input", "focus", "blur", "update:value", "pressEnter"],
+        events: [
+          "change",
+          "input",
+          "focus",
+          "blur",
+          "update:value",
+          "pressEnter",
+        ],
       },
-    ]
+    ],
   },
   {
     name: "AntdV组件",
@@ -139,15 +145,33 @@ export const paletteGroups: PaletteGroup[] = [
           // ]
         },
       },
-
       {
-        type: "a-table",
+        type: "vxe-table",
         label: "表格",
-        props: {},
-        availableSlots: ["default", "title", "footer"],
-        events: ["change", "expand"],
+        props: {
+          data: [],
+          border: true,
+          height: 300,
+        },
+        availableSlots: ["default"],
+        slots: {
+          default: (parentId) => [
+            {
+              nodeId: `${parentId}_col1`,
+              type: "vxe-column",
+              props: { title: "列名", field: "field", width: 120 },
+            },
+          ],
+        },
+        events: [],
       },
-
+      {
+        type: "vxe-column",
+        label: "表格列",
+        props: { title: "标签" },
+        availableSlots: ["default"],
+        events: [],
+      },
     ],
   },
 ];
