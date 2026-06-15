@@ -146,30 +146,57 @@ export const paletteGroups: PaletteGroup[] = [
         },
       },
       {
-        type: "vxe-table",
+        type: "a-table",
         label: "表格",
         props: {
-          data: [],
+          columns: [{
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+          },
+          {
+            title: 'Age',
+            dataIndex: 'age',
+            key: 'age',
+          },
+          {
+            title: 'Address',
+            dataIndex: 'address',
+            key: 'address',
+          },
+          {
+            title: 'Tags',
+            key: 'tags',
+            dataIndex: 'tags',
+          },
+          {
+            title: 'Action',
+            key: 'action',
+          },],
+          dataSource: [{
+            name: 'John Brown',
+            age: 32,
+            address: 'New York No. 1 Lake Park',
+            tags: ['nice', 'developer'],
+          },
+          {
+            name: 'Jim Green',
+            age: 42,
+            address: 'London No. 1 Lake Park',
+            tags: ['loser'],
+          },
+          {
+            name: 'Joe Black',
+            age: 32,
+            address: 'Sydney No. 1 Lake Park',
+            tags: ['cool', 'teacher'],
+          },],
           border: true,
           height: 300,
         },
-        availableSlots: ["default"],
-        slots: {
-          default: (parentId) => [
-            {
-              nodeId: `${parentId}_col1`,
-              type: "vxe-column",
-              props: { title: "列名", field: "field", width: 120 },
-            },
-          ],
-        },
-        events: [],
-      },
-      {
-        type: "vxe-column",
-        label: "表格列",
-        props: { title: "标签" },
-        availableSlots: ["default"],
+        availableSlots: ["default","title","footer","summary" ],
+        appendableSlots: ["default"],
+        slots: {},
         events: [],
       },
     ],

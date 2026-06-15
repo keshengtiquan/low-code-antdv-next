@@ -12,6 +12,7 @@ import AButtonEditor from "./editors/AButtonEditor.vue";
 import AFormEditor from "./editors/AFormEditor.vue";
 import AFormItemEditor from "./editors/AFormItemEditor.vue";
 import AInputEditor from "./editors/AInputEditor.vue";
+import ATableEditor from "./editors/ATableEditor.vue";
 
 
 /** 类型 → 属性编辑器组件 */
@@ -23,6 +24,7 @@ const editorRegistry: Record<string, Component> = {
   "a-form": AFormEditor,
   "a-form-item": AFormItemEditor,
   "a-input": AInputEditor,
+  "a-table": ATableEditor,
 };
 
 const schemaStore = useSchema();

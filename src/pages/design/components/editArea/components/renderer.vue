@@ -43,7 +43,15 @@ const { updateNode } = schemaStore;
 // a-form → a-form-item → 输入组件的 model 和 v-model 自动绑定
 const { finalProps } = useFormModelBinding(props, filteredProps);
 
-/** 组件支持但尚未填充的插槽名列表 */
+/** 动态插槽：存在于 node.slots 中但不在 config availableSlots 中，且值为空数组 */
+const dynamicEmptySlots = computed(() => {
+  if (!props.node.slots) return [];
+  const configured = new Set(getAvailableSlots(props.node.type));
+  return Object.entries(props.node.slots)
+    .filter(([name, value]) => !configured.has(name) && Array.isArray(value) && value.length === 0)
+    .map(([name]) => name);
+});
+
 const unfilledSlots = computed(() => {
   const available = getAvailableSlots(props.node.type);
   const filled = props.node.slots ? Object.keys(props.node.slots) : [];
@@ -95,6 +103,13 @@ const isSelected = computed(() => selectedNodeId.value === props.node.nodeId);
           :parent-node-id="node.nodeId"
           :parent-selected="isSelected"
           compact
+        />
+        <!-- 动态插槽（不在 config availableSlots 中，且当前为空）：显示占位引导拖入 -->
+        <SlotPlaceholder
+          v-if="dynamicEmptySlots.includes(slotName)"
+          :slot-name="slotName"
+          :parent-node-id="node.nodeId"
+          :parent-selected="isSelected"
         />
       </template>
     </template>

@@ -9,6 +9,10 @@ import {
   createEventProxy,
   eventToPropName,
 } from "@/composables/useEventProxy";
+import { useInjectTableCellContext } from "@/composables/useTableCellContext";
+
+/** 当前是否处于表格单元格内（由 ATable → TableCellContextProvider provide） */
+const cellContext = useInjectTableCellContext();
 
 const props = defineProps<{
   node: PageNode;
@@ -62,7 +66,14 @@ const finalProps = computed(() => {
   const handlers: Record<string, (...args: unknown[]) => void> = {};
   for (const event of nodeEvents) {
     const propName = eventToPropName(event);
-    const forwarder = (...args: unknown[]) => proxy.$emit(event, ...args);
+    const forwarder = (...args: unknown[]) => {
+      // 若处于表格单元格内，将当前行数据附加到事件参数末尾
+      if (cellContext) {
+        proxy.$emit(event, ...args, cellContext.value);
+      } else {
+        proxy.$emit(event, ...args);
+      }
+    };
     const existing = base[propName];
 
     if (existing && typeof existing === 'function') {
