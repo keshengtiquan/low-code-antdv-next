@@ -2,7 +2,8 @@
 import type { PageNode } from "@/types/schema";
 import { useSchema } from "@/store/schema";
 import { computed, ref } from "vue";
-import { HolderOutlined } from "@antdv-next/icons";
+import { HolderOutlined, CodeOutlined } from "@antdv-next/icons";
+import CodeEditorModal from "@/components/CodeEditorModal.vue";
 
 interface ColumnInfo {
   title?: string;
@@ -42,6 +43,20 @@ const selectedPath = ref<number[] | null>(null);
 /** 当前打开的 popover 行路径字符串 */
 const popoverOpenKey = ref<string | null>(null);
 
+/** render 代码编辑弹框 */
+const renderModalPath = ref<number[] | null>(null);
+const renderModalOpen = ref(false);
+
+/** 传给 CodeEditorModal 的初始代码（弹框打开时锁定） */
+const renderModalCode = computed(() => {
+  if (!renderModalPath.value) return "";
+  const { arr, idx } = resolvePathFromTree(
+    columnsTree.value,
+    renderModalPath.value,
+  );
+  return (arr[idx]?.render as string) ?? "";
+});
+
 /** 路径是否相同 */
 function isSamePath(a: number[], b: number[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -49,7 +64,10 @@ function isSamePath(a: number[], b: number[]): boolean {
 
 /** 选中/取消选中列 */
 function selectColumn(path: number[]) {
-  selectedPath.value = selectedPath.value && isSamePath(selectedPath.value, path) ? null : [...path];
+  selectedPath.value =
+    selectedPath.value && isSamePath(selectedPath.value, path)
+      ? null
+      : [...path];
 }
 
 /** 选中行是否匹配 */
@@ -59,7 +77,24 @@ function isSelected(path: number[]): boolean {
 
 /** 打开指定行的 popover */
 function openPopover(path: number[]) {
-  popoverOpenKey.value = path.join('-');
+  popoverOpenKey.value = path.join("-");
+}
+
+/** 打开 render 代码编辑弹框 */
+function openRenderModal(path: number[]) {
+  console.log(path);
+  renderModalPath.value = [...path];
+  renderModalOpen.value = true;
+  // 关闭 popover，避免两个浮层重叠
+  popoverOpenKey.value = null;
+}
+
+/** 保存 render 代码 */
+function onRenderSave(code: string) {
+  if (renderModalPath.value) {
+    updateColumn(renderModalPath.value, "render", code || undefined);
+  }
+  renderModalPath.value = null;
 }
 
 /** 在树中指定路径的同级位置插入一个新列 */
@@ -71,22 +106,22 @@ function insertAtPath(tree: ColumnInfo[], path: number[], col: ColumnInfo) {
 /* ======== 拖拽排序 ======== */
 const dragPath = ref<number[] | null>(null);
 const dropTarget = ref<number[] | null>(null);
-const dropPos = ref<'before' | 'after' | 'inside'>('after');
+const dropPos = ref<"before" | "after" | "inside">("after");
 
 function onDragStart(e: DragEvent, path: number[]) {
   if (!e.dataTransfer) return;
   dragPath.value = path;
-  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.effectAllowed = "move";
 }
 
 function onDragOver(e: DragEvent, path: number[]) {
   e.preventDefault();
   if (!e.dataTransfer) return;
   if (!dragPath.value || isSamePath(dragPath.value, path)) {
-    e.dataTransfer.dropEffect = 'none';
+    e.dataTransfer.dropEffect = "none";
     return;
   }
-  e.dataTransfer.dropEffect = 'move';
+  e.dataTransfer.dropEffect = "move";
   dropTarget.value = path;
 
   const el = e.currentTarget as HTMLElement;
@@ -94,13 +129,13 @@ function onDragOver(e: DragEvent, path: number[]) {
   const y = e.clientY - rect.top;
   const h = rect.height;
   // 通过当前行的 hasChildren 属性判断是否为分组
-  const isGroup = (el.dataset.hasChildren as string) === 'true';
+  const isGroup = (el.dataset.hasChildren as string) === "true";
   if (isGroup && y > h * 0.25 && y < h * 0.75) {
-    dropPos.value = 'inside';
+    dropPos.value = "inside";
   } else if (y < h / 2) {
-    dropPos.value = 'before';
+    dropPos.value = "before";
   } else {
-    dropPos.value = 'after';
+    dropPos.value = "after";
   }
 }
 
@@ -128,7 +163,7 @@ function resetDrag() {
 }
 
 function getDropClass(path: number[]): string {
-  if (!dropTarget.value || !isSamePath(dropTarget.value, path)) return '';
+  if (!dropTarget.value || !isSamePath(dropTarget.value, path)) return "";
   return `drop-${dropPos.value}`;
 }
 
@@ -144,12 +179,12 @@ function moveColumn(fromPath: number[], toPath: number[], position: string) {
   let { arr: toArr, idx: toIdx } = resolvePathFromTree(tree, toPath);
 
   // 3. 根据 position 插入
-  if (position === 'inside') {
+  if (position === "inside") {
     // 插入到目标分组内部末尾
     const target = toArr[toIdx];
     if (!target.children) target.children = [];
     target.children.push(moved);
-  } else if (position === 'before') {
+  } else if (position === "before") {
     toArr.splice(toIdx, 0, moved);
   } else {
     // after
@@ -218,7 +253,10 @@ function addChild(path: number[]) {
   updateNode(props.node.nodeId, { columns: tree });
 }
 
-function resolvePathFromTree(tree: ColumnInfo[], path: number[]): { arr: ColumnInfo[]; idx: number } {
+function resolvePathFromTree(
+  tree: ColumnInfo[],
+  path: number[],
+): { arr: ColumnInfo[]; idx: number } {
   if (path.length === 1) return { arr: tree, idx: path[0] };
   let cursor = tree;
   for (let i = 0; i < path.length - 1; i++) {
@@ -378,7 +416,7 @@ const fixedOptions = [
     <div class="prop-row">
       <label class="prop-label">高度</label>
       <a-input-number
-        :value="(node.props.height as number)"
+        :value="node.props.height as number"
         size="small"
         style="width: 140px"
         placeholder="auto"
@@ -404,7 +442,9 @@ const fixedOptions = [
         <span class="section-label">列管理</span>
         <div class="header-actions">
           <a-button size="small" type="dashed" @click="addGroup">分组</a-button>
-          <a-button size="small" type="dashed" @click="addColumn">+ 列</a-button>
+          <a-button size="small" type="dashed" @click="addColumn"
+            >+ 列</a-button
+          >
         </div>
       </div>
 
@@ -422,7 +462,11 @@ const fixedOptions = [
             @update:open="(val: boolean) => !val && (popoverOpenKey = null)"
             trigger="click"
             placement="leftTop"
-            :overlay-style="{ width: '220px', maxHeight: '380px', overflowY: 'auto' }"
+            :overlay-style="{
+              width: '220px',
+              maxHeight: '380px',
+              overflowY: 'auto',
+            }"
           >
             <template #content>
               <div class="pop-header">
@@ -432,60 +476,137 @@ const fixedOptions = [
               <div class="column-settings">
                 <div class="pop-field">
                   <label class="pop-label">标题</label>
-                  <a-input size="small" :value="row.col.title"
-                    @change="(e: InputEvent) => updateColumn(row.path, 'title', (e.target as HTMLInputElement).value)" />
+                  <a-input
+                    size="small"
+                    :value="row.col.title"
+                    @change="
+                      (e: InputEvent) =>
+                        updateColumn(
+                          row.path,
+                          'title',
+                          (e.target as HTMLInputElement).value,
+                        )
+                    "
+                  />
                 </div>
                 <div class="pop-field">
                   <label class="pop-label">dataIndex</label>
-                  <a-input size="small" :value="row.col.dataIndex"
-                    @change="(e: InputEvent) => updateColumn(row.path, 'dataIndex', (e.target as HTMLInputElement).value)" />
+                  <a-input
+                    size="small"
+                    :value="row.col.dataIndex"
+                    @change="
+                      (e: InputEvent) =>
+                        updateColumn(
+                          row.path,
+                          'dataIndex',
+                          (e.target as HTMLInputElement).value,
+                        )
+                    "
+                  />
                 </div>
                 <div class="pop-field">
                   <label class="pop-label">key</label>
-                  <a-input size="small" :value="row.col.key"
-                    @change="(e: InputEvent) => updateColumn(row.path, 'key', (e.target as HTMLInputElement).value)" />
+                  <a-input
+                    size="small"
+                    :value="row.col.key"
+                    @change="
+                      (e: InputEvent) =>
+                        updateColumn(
+                          row.path,
+                          'key',
+                          (e.target as HTMLInputElement).value,
+                        )
+                    "
+                  />
                 </div>
                 <div class="pop-field">
                   <label class="pop-label">render</label>
-                  <a-input size="small" :value="row.col.render"
-                    @change="(e: InputEvent) => updateColumn(row.path, 'render', (e.target as HTMLInputElement).value)" />
+                  <a-button size="small" @click="openRenderModal(row.path)">
+                    <template #icon><CodeOutlined /></template>
+                    编辑代码
+                  </a-button>
                 </div>
                 <div class="pop-field">
                   <label class="pop-label">宽度</label>
-                  <a-input size="small" :value="row.col.width" placeholder="auto"
-                    @change="(e: InputEvent) => updateColumn(row.path, 'width', (e.target as HTMLInputElement).value || undefined)" />
+                  <a-input
+                    size="small"
+                    :value="row.col.width"
+                    placeholder="auto"
+                    @change="
+                      (e: InputEvent) =>
+                        updateColumn(
+                          row.path,
+                          'width',
+                          (e.target as HTMLInputElement).value || undefined,
+                        )
+                    "
+                  />
                 </div>
                 <div class="pop-field">
                   <label class="pop-label">固定</label>
-                  <a-select size="small" :value="row.col.fixed ?? ''" style="width:100%" :options="fixedOptions"
-                    @change="(val: string) => updateColumn(row.path, 'fixed', val || undefined)" />
+                  <a-select
+                    size="small"
+                    :value="row.col.fixed ?? ''"
+                    style="width: 100%"
+                    :options="fixedOptions"
+                    @change="
+                      (val: string) =>
+                        updateColumn(row.path, 'fixed', val || undefined)
+                    "
+                  />
                 </div>
                 <div class="pop-field">
                   <label class="pop-label">对齐</label>
-                  <a-select size="small" :value="row.col.align ?? 'left'" style="width:100%" :options="alignOptions"
-                    @change="(val: string) => updateColumn(row.path, 'align', val)" />
+                  <a-select
+                    size="small"
+                    :value="row.col.align ?? 'left'"
+                    style="width: 100%"
+                    :options="alignOptions"
+                    @change="
+                      (val: string) => updateColumn(row.path, 'align', val)
+                    "
+                  />
                 </div>
                 <div class="pop-field pop-row">
                   <label class="pop-label">省略</label>
-                  <a-switch size="small" :checked="!!row.col.ellipsis"
-                    @change="(val: boolean) => updateColumn(row.path, 'ellipsis', val || undefined)" />
+                  <a-switch
+                    size="small"
+                    :checked="!!row.col.ellipsis"
+                    @change="
+                      (val: boolean) =>
+                        updateColumn(row.path, 'ellipsis', val || undefined)
+                    "
+                  />
                 </div>
                 <div class="pop-field pop-row">
                   <label class="pop-label">排序</label>
-                  <a-switch size="small" :checked="!!row.col.sorter"
-                    @change="(val: boolean) => updateColumn(row.path, 'sorter', val || undefined)" />
+                  <a-switch
+                    size="small"
+                    :checked="!!row.col.sorter"
+                    @change="
+                      (val: boolean) =>
+                        updateColumn(row.path, 'sorter', val || undefined)
+                    "
+                  />
                 </div>
                 <div class="pop-divider" />
                 <div class="pop-field pop-row">
                   <label class="pop-label">自定义单元格</label>
-                  <a-switch size="small" :checked="hasCustomSlot(row.path)"
-                    @change="(val: boolean) => toggleCustomSlot(row.path, val)" />
+                  <a-switch
+                    size="small"
+                    :checked="hasCustomSlot(row.path)"
+                    @change="(val: boolean) => toggleCustomSlot(row.path, val)"
+                  />
                 </div>
               </div>
             </template>
             <div
               class="column-row"
-              :class="[`depth-${Math.min(row.depth, 3)}`, { selected: isSelected(row.path) }, getDropClass(row.path)]"
+              :class="[
+                `depth-${Math.min(row.depth, 3)}`,
+                { selected: isSelected(row.path) },
+                getDropClass(row.path),
+              ]"
               :data-has-children="false"
               @click="selectColumn(row.path)"
               @dragover="onDragOver($event, row.path)"
@@ -493,11 +614,20 @@ const fixedOptions = [
               @drop="onDrop($event, row.path)"
               @dragend="onDragEnd"
             >
-              <span class="drag-handle" draggable="true" @dragstart="onDragStart($event, row.path)" @click.stop>
+              <span
+                class="drag-handle"
+                draggable="true"
+                @dragstart="onDragStart($event, row.path)"
+                @click.stop
+              >
                 <HolderOutlined />
               </span>
               <span class="tree-lines">
-                <span v-for="(last, pi) in row.parentLast" :key="pi" class="tree-seg">
+                <span
+                  v-for="(last, pi) in row.parentLast"
+                  :key="pi"
+                  class="tree-seg"
+                >
                   <span v-if="!last" class="tree-vline" />
                   <span v-else class="tree-space" />
                 </span>
@@ -506,12 +636,18 @@ const fixedOptions = [
                 <div class="col-head">
                   <span class="col-title">{{ row.col.title }}</span>
                   <span class="col-key">{{ columnSlotKey(row.col) }}</span>
-                  <span v-if="hasCustomSlot(row.path)" class="col-badge">自定义</span>
+                  <span v-if="hasCustomSlot(row.path)" class="col-badge"
+                    >自定义</span
+                  >
                 </div>
               </div>
               <div class="col-actions">
-                <span class="col-gear" @click.stop="openPopover(row.path)">⚙</span>
-                <span class="col-close" @click.stop="deleteColumn(row.path)">×</span>
+                <span class="col-gear" @click.stop="openPopover(row.path)"
+                  >⚙</span
+                >
+                <span class="col-close" @click.stop="deleteColumn(row.path)"
+                  >×</span
+                >
               </div>
             </div>
           </a-popover>
@@ -520,7 +656,11 @@ const fixedOptions = [
           <div
             v-else
             class="column-row group-row"
-            :class="[`depth-${Math.min(row.depth, 3)}`, { selected: isSelected(row.path) }, getDropClass(row.path)]"
+            :class="[
+              `depth-${Math.min(row.depth, 3)}`,
+              { selected: isSelected(row.path) },
+              getDropClass(row.path),
+            ]"
             :data-has-children="true"
             @click="selectColumn(row.path)"
             @dragover="onDragOver($event, row.path)"
@@ -528,11 +668,20 @@ const fixedOptions = [
             @drop="onDrop($event, row.path)"
             @dragend="onDragEnd"
           >
-            <span class="drag-handle" draggable="true" @dragstart="onDragStart($event, row.path)" @click.stop>
+            <span
+              class="drag-handle"
+              draggable="true"
+              @dragstart="onDragStart($event, row.path)"
+              @click.stop
+            >
               <HolderOutlined />
             </span>
             <span class="tree-lines">
-              <span v-for="(last, pi) in row.parentLast" :key="pi" class="tree-seg">
+              <span
+                v-for="(last, pi) in row.parentLast"
+                :key="pi"
+                class="tree-seg"
+              >
                 <span v-if="!last" class="tree-vline" />
                 <span v-else class="tree-space" />
               </span>
@@ -541,13 +690,30 @@ const fixedOptions = [
               <span class="col-title group-title">{{ row.col.title }}</span>
             </div>
             <div class="col-actions group-actions">
-              <span class="col-add" title="添加子列" @click.stop="addChild(row.path)">+</span>
-              <span class="col-close" @click.stop="deleteColumn(row.path)">×</span>
+              <span
+                class="col-add"
+                title="添加子列"
+                @click.stop="addChild(row.path)"
+                >+</span
+              >
+              <span class="col-close" @click.stop="deleteColumn(row.path)"
+                >×</span
+              >
             </div>
           </div>
         </template>
       </div>
     </div>
+
+    <!-- Render 代码编辑弹框 -->
+    <CodeEditorModal
+      v-model:open="renderModalOpen"
+      title="编辑 render 代码"
+      :code="renderModalCode"
+      language="javascript"
+      hint="可用变量：text · record · index · h"
+      @save="onRenderSave"
+    />
   </div>
 </template>
 
@@ -683,7 +849,7 @@ const fixedOptions = [
 }
 
 .tree-vline::before {
-  content: '│';
+  content: "│";
 }
 
 .tree-space {
@@ -691,7 +857,7 @@ const fixedOptions = [
 }
 
 .tree-space::before {
-  content: '│';
+  content: "│";
 }
 
 /* ── 列体 ── */
@@ -775,8 +941,13 @@ const fixedOptions = [
   user-select: none;
 }
 
-.col-gear { color: #999; }
-.col-gear:hover { background: #e6f0ff; color: #1677ff; }
+.col-gear {
+  color: #999;
+}
+.col-gear:hover {
+  background: #e6f0ff;
+  color: #1677ff;
+}
 
 .col-add {
   color: #999;
@@ -789,7 +960,10 @@ const fixedOptions = [
   color: #52c41a;
 }
 
-.col-close:hover { background: #fff1f0; color: #ff4d4f; }
+.col-close:hover {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
 
 /* ── 拖拽手柄 ── */
 .drag-handle {
@@ -802,7 +976,9 @@ const fixedOptions = [
   color: #999;
   cursor: grab;
   border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
   opacity: 1;
   font-weight: 700;
 }
@@ -840,8 +1016,15 @@ const fixedOptions = [
   gap: 6px;
 }
 
-.pop-title { font-size: 13px; font-weight: 600; color: #333; }
-.pop-subtitle { font-size: 12px; color: #999; }
+.pop-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+}
+.pop-subtitle {
+  font-size: 12px;
+  color: #999;
+}
 
 .column-settings {
   display: flex;
@@ -861,7 +1044,10 @@ const fixedOptions = [
   justify-content: space-between;
 }
 
-.pop-label { font-size: 12px; color: #888; }
+.pop-label {
+  font-size: 12px;
+  color: #888;
+}
 
 .pop-divider {
   border-top: 1px solid #f0f0f0;

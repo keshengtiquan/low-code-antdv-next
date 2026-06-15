@@ -4,6 +4,20 @@ import { CONTAINER_TYPES } from "@/constants";
 import type { PageNode, PageSchema } from "@/types/schema";
 import * as UUID from "uuid";
 
+/** kebab-case → PascalCase：'a-tag' → 'ATag'，'a-auto-complete' → 'AAutoComplete' */
+export function kebabToPascalCase(str: string): string {
+  return str
+    .charAt(0)
+    .toUpperCase()
+    .concat(
+      str
+        .slice(1)
+        .replace(/-([a-z])/g, (_: string, letter: string) =>
+          letter.toUpperCase(),
+        ),
+    );
+}
+
 export const genId = (): string => {
   return UUID.v4().replace(/-/g, "");
 };
