@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { PageNode } from "@/types/schema";
 import { useSchema } from "@/store/schema";
-import { computed, ref, type Component } from "vue";
+import { computed, ref } from "vue";
 import { HolderOutlined } from "@antdv-next/icons";
 
 interface ColumnInfo {
@@ -15,7 +15,7 @@ interface ColumnInfo {
   sorter?: boolean;
   /** 子列：存在时该列为分组列，不再有 dataIndex/key */
   children?: ColumnInfo[];
-  render?: (value: any, record: any, index: number)=> Component | string;
+  render?: string;
 }
 
 /** 递归展开后的渲染行 */
