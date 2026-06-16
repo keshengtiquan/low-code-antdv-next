@@ -16,7 +16,7 @@ const props = withDefaults(
     code: "",
     language: "javascript",
     hint: "",
-    height: "360px",
+    height: "500px",
   },
 );
 
@@ -69,8 +69,10 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onWindowKeydown));
   <a-modal
     v-model:open="openComputed"
     :title="title"
-    width="680px"
+    width="50%"
     @ok="handleOk"
+    cancelText="取消"
+    okText="保存"
     @cancel="handleCancel"
   >
     <div class="code-editor-modal-body">
@@ -79,6 +81,7 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onWindowKeydown));
         <MonacoEditor
           v-model="editingCode"
           :language="language"
+          theme="vs"
           :options="{
             fontSize: 14,
             lineNumbers: 'on',

@@ -22,6 +22,12 @@ export const genId = (): string => {
   return UUID.v4().replace(/-/g, "");
 };
 
+/** 纯数字字符串 → number（"100" → 100），否则原样返回（"100%"、"calc(...)"） */
+export function tryParseNumber(val: string): string | number {
+  if (/^\d+(\.\d+)?$/.test(val)) return Number(val);
+  return val;
+}
+
 // 查找节点自身
 export function findNodeById(id: string, node: PageNode): PageNode | null {
   if (!node) return null;

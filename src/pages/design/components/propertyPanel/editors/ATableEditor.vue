@@ -4,6 +4,7 @@ import { useSchema } from "@/store/schema";
 import { computed, ref } from "vue";
 import { HolderOutlined, CodeOutlined } from "@antdv-next/icons";
 import CodeEditorModal from "@/components/CodeEditorModal.vue";
+import { tryParseNumber } from "@/utils";
 
 interface ColumnInfo {
   title?: string;
@@ -95,6 +96,31 @@ function onRenderSave(code: string) {
     updateColumn(renderModalPath.value, "render", code || undefined);
   }
   renderModalPath.value = null;
+}
+
+/* ======== dataSource 代码编辑弹框 ======== */
+
+const dataSourceModalOpen = ref(false);
+
+const dataSourceModalCode = computed(() => {
+  const ds = props.node.props?.dataSource;
+  return ds ? JSON.stringify(ds, null, 2) : "[]";
+});
+
+function openDataSourceModal() {
+  dataSourceModalOpen.value = true;
+}
+
+function onDataSourceSave(code: string) {
+  try {
+    const parsed = JSON.parse(code);
+    setProp(
+      "dataSource",
+      Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined,
+    );
+  } catch {
+    // JSON 解析失败，忽略
+  }
 }
 
 /** 在树中指定路径的同级位置插入一个新列 */
@@ -199,6 +225,93 @@ function moveColumn(fromPath: number[], toPath: number[], position: string) {
 
 function setProp(key: string, value: unknown) {
   updateNode(props.node.nodeId, { [key]: value });
+}
+
+/* ======== 分页 ======== */
+
+/** 获取当前 pagination 对象，false/undefined 时返回 null */
+function getPagination(): Record<string, unknown> | null {
+  const p = props.node.props?.pagination;
+  if (typeof p === "object" && p !== null) return p as Record<string, unknown>;
+  return null;
+}
+
+/** 开关：显示/隐藏分页 */
+function setPaginationEnabled(enabled: boolean) {
+  if (!enabled) {
+    setProp("pagination", false);
+  } else {
+    const current = props.node.props?.pagination;
+    if (current === false || current === undefined) {
+      setProp("pagination", undefined);
+    }
+  }
+}
+
+/** 更新 pagination 子字段（展开现有对象 → 覆盖目标字段 → 整体写回） */
+function setPaginationField(key: string, value: unknown) {
+  const existing = getPagination() ?? {};
+  const next = { ...existing };
+  if (
+    value === undefined ||
+    value === null ||
+    value === false ||
+    (Array.isArray(value) && value.length === 0)
+  ) {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+  setProp("pagination", Object.keys(next).length > 0 ? next : undefined);
+}
+
+/* ======== 滚动 ======== */
+
+function getScroll(): Record<string, unknown> | null {
+  const s = props.node.props?.scroll;
+  if (typeof s === "object" && s !== null) return s as Record<string, unknown>;
+  return null;
+}
+
+function setScrollField(key: string, value: unknown) {
+  const existing = getScroll() ?? {};
+  const next = { ...existing };
+  if (value === undefined || value === null) {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+  setProp("scroll", Object.keys(next).length > 0 ? next : undefined);
+}
+
+/* ======== 粘性头部 ======== */
+
+function getSticky(): Record<string, unknown> | null {
+  const s = props.node.props?.sticky;
+  if (typeof s === "object" && s !== null) return s as Record<string, unknown>;
+  return null;
+}
+
+function setStickyEnabled(enabled: boolean) {
+  if (!enabled) {
+    setProp("sticky", undefined);
+  } else {
+    const current = props.node.props?.sticky;
+    if (current === undefined || current === false) {
+      setProp("sticky", true);
+    }
+  }
+}
+
+function setStickyField(key: string, value: unknown) {
+  const existing = getSticky() ?? {};
+  const next = { ...existing };
+  if (value === undefined || value === null) {
+    delete next[key];
+  } else {
+    next[key] = value;
+  }
+  setProp("sticky", Object.keys(next).length > 0 ? next : true);
 }
 
 /** 解析 columns */
@@ -397,6 +510,12 @@ const fixedOptions = [
   { label: "left", value: "left" },
   { label: "right", value: "right" },
 ];
+
+const placementOptions = [
+  { label: "底部左侧", value: "bottomStart" },
+  { label: "底部居中", value: "bottomCenter" },
+  { label: "底部右侧", value: "bottomEnd" },
+];
 </script>
 
 <template>
@@ -434,6 +553,208 @@ const fixedOptions = [
         :options="sizeOptions"
         @change="(val: string) => setProp('size', val)"
       />
+    </div>
+
+    <!-- 滚动设置 -->
+    <div class="section-break">
+      <span class="section-label">滚动设置</span>
+    </div>
+
+    <div class="prop-row">
+      <label class="prop-label">变化后滚到顶部</label>
+      <a-switch
+        :checked="!!getScroll()?.scrollToFirstRowOnChange"
+        size="small"
+        @change="
+          (val: boolean) =>
+            setScrollField('scrollToFirstRowOnChange', val || undefined)
+        "
+      />
+    </div>
+
+    <div class="prop-row">
+      <label class="prop-label">横向滚动(x)</label>
+      <a-input
+        :value="(getScroll()?.x as string | number) ?? undefined"
+        size="small"
+        style="width: 140px"
+        placeholder="auto"
+        @change="
+          (e: InputEvent) => {
+            const raw = (e.target as HTMLInputElement).value;
+            setScrollField('x', raw ? tryParseNumber(raw) : undefined);
+          }
+        "
+      />
+    </div>
+
+    <div class="prop-row">
+      <label class="prop-label">纵向滚动(y)</label>
+      <a-input
+        :value="(getScroll()?.y as string | number) ?? undefined"
+        size="small"
+        style="width: 140px"
+        placeholder="auto"
+        @change="
+          (e: InputEvent) => {
+            const raw = (e.target as HTMLInputElement).value;
+            setScrollField('y', raw ? tryParseNumber(raw) : undefined);
+          }
+        "
+      />
+    </div>
+
+    <!-- 粘性头部 -->
+    <div class="section-break">
+      <span class="section-label">粘性头部</span>
+    </div>
+
+    <div class="prop-row">
+      <label class="prop-label">启用</label>
+      <a-switch
+        :checked="node.props.sticky !== false && node.props.sticky !== undefined"
+        size="small"
+        @change="(val: boolean) => setStickyEnabled(val)"
+      />
+    </div>
+
+    <template
+      v-if="node.props.sticky !== false && node.props.sticky !== undefined"
+    >
+      <div class="prop-row">
+        <label class="prop-label">头部偏移(px)</label>
+        <a-input-number
+          :value="(getSticky()?.offsetHeader as number) ?? undefined"
+          size="small"
+          style="width: 140px"
+          :min="0"
+          placeholder="默认"
+          @change="
+            (val: number | null) =>
+              setStickyField('offsetHeader', val ?? undefined)
+          "
+        />
+      </div>
+
+      <div class="prop-row">
+        <label class="prop-label">滚动偏移(px)</label>
+        <a-input-number
+          :value="(getSticky()?.offsetScroll as number) ?? undefined"
+          size="small"
+          style="width: 140px"
+          :min="0"
+          placeholder="默认"
+          @change="
+            (val: number | null) =>
+              setStickyField('offsetScroll', val ?? undefined)
+          "
+        />
+      </div>
+    </template>
+
+    <!-- 分页设置 -->
+    <div class="section-break">
+      <span class="section-label">分页设置</span>
+    </div>
+
+    <div class="prop-row">
+      <label class="prop-label">显示分页</label>
+      <a-switch
+        :checked="node.props.pagination !== false"
+        size="small"
+        @change="(val: boolean) => setPaginationEnabled(val)"
+      />
+    </div>
+
+    <template v-if="node.props.pagination !== false">
+      <div class="prop-row">
+        <label class="prop-label">每页条数</label>
+        <a-input-number
+          :value="getPagination()?.pageSize ?? undefined"
+          size="small"
+          style="width: 140px"
+          :min="1"
+          placeholder="默认"
+          @change="
+            (val: number | null) =>
+              setPaginationField('pageSize', val ?? undefined)
+          "
+        />
+      </div>
+
+      <div class="prop-row">
+        <label class="prop-label">可切换条数</label>
+        <a-switch
+          :checked="!!getPagination()?.showSizeChanger"
+          size="small"
+          @change="
+            (val: boolean) =>
+              setPaginationField('showSizeChanger', val || undefined)
+          "
+        />
+      </div>
+
+      <div class="prop-row">
+        <label class="prop-label">快速跳转</label>
+        <a-switch
+          :checked="!!getPagination()?.showQuickJumper"
+          size="small"
+          @change="
+            (val: boolean) =>
+              setPaginationField('showQuickJumper', val || undefined)
+          "
+        />
+      </div>
+
+      <div class="prop-row">
+        <label class="prop-label">单页隐藏</label>
+        <a-switch
+          :checked="!!getPagination()?.hideOnSinglePage"
+          size="small"
+          @change="
+            (val: boolean) =>
+              setPaginationField('hideOnSinglePage', val || undefined)
+          "
+        />
+      </div>
+
+      <div class="prop-row">
+        <label class="prop-label">简洁模式</label>
+        <a-switch
+          :checked="!!getPagination()?.simple"
+          size="small"
+          @change="
+            (val: boolean) => setPaginationField('simple', val || undefined)
+          "
+        />
+      </div>
+
+      <div class="prop-row">
+        <label class="prop-label">位置</label>
+        <a-select
+          :value="(getPagination()?.placement as string[])?.[0] ?? 'bottomEnd'"
+          size="small"
+          style="width: 140px"
+          :options="placementOptions"
+          @change="
+            (val: string) =>
+              setPaginationField('placement', val ? [val] : undefined)
+          "
+        />
+      </div>
+    </template>
+
+    <!-- 数据源 -->
+    <div class="section-break">
+      <span class="section-label">数据源</span>
+    </div>
+
+    <div class="prop-row">
+      <label class="prop-label">dataSource</label>
+      <a-button size="small" @click="openDataSourceModal">
+        <template #icon><CodeOutlined /></template>
+        编辑 JSON
+      </a-button>
     </div>
 
     <!-- 列管理 -->
@@ -533,12 +854,10 @@ const fixedOptions = [
                     :value="row.col.width"
                     placeholder="auto"
                     @change="
-                      (e: InputEvent) =>
-                        updateColumn(
-                          row.path,
-                          'width',
-                          (e.target as HTMLInputElement).value || undefined,
-                        )
+                      (e: InputEvent) => {
+                        const raw = (e.target as HTMLInputElement).value;
+                        updateColumn(row.path, 'width', raw ? tryParseNumber(raw) : undefined);
+                      }
                     "
                   />
                 </div>
@@ -713,6 +1032,16 @@ const fixedOptions = [
       language="javascript"
       hint="可用变量：text · record · index · h"
       @save="onRenderSave"
+    />
+
+    <!-- dataSource 代码编辑弹框 -->
+    <CodeEditorModal
+      v-model:open="dataSourceModalOpen"
+      title="编辑 dataSource"
+      :code="dataSourceModalCode"
+      language="json"
+      hint='JSON 数组格式，例如：[{ "name": "张三", "age": 32 }]'
+      @save="onDataSourceSave"
     />
   </div>
 </template>
