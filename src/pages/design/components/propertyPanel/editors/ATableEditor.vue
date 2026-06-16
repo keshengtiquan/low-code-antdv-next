@@ -14,10 +14,16 @@ interface ColumnInfo {
   fixed?: string;
   align?: string;
   ellipsis?: boolean;
-  sorter?: boolean;
+  sorter?: string;
+  filters?: { text: string; value: string }[];
+  filterMultiple?: boolean;
+  filterMode?: string;
+  filterSearch?: boolean;
   /** 子列：存在时该列为分组列，不再有 dataIndex/key */
   children?: ColumnInfo[];
   render?: string;
+  onFilter?: string;
+  onCell?: string;
 }
 
 /** 递归展开后的渲染行 */
@@ -58,6 +64,20 @@ const renderModalCode = computed(() => {
   return (arr[idx]?.render as string) ?? "";
 });
 
+/** filters JSON 编辑弹框 */
+const filtersModalPath = ref<number[] | null>(null);
+const filtersModalOpen = ref(false);
+
+const filtersModalCode = computed(() => {
+  if (!filtersModalPath.value) return "[]";
+  const { arr, idx } = resolvePathFromTree(
+    columnsTree.value,
+    filtersModalPath.value,
+  );
+  const filters = arr[idx]?.filters;
+  return filters ? JSON.stringify(filters, null, 2) : "[]";
+});
+
 /** 路径是否相同 */
 function isSamePath(a: number[], b: number[]): boolean {
   return a.length === b.length && a.every((v, i) => v === b[i]);
@@ -96,6 +116,113 @@ function onRenderSave(code: string) {
     updateColumn(renderModalPath.value, "render", code || undefined);
   }
   renderModalPath.value = null;
+}
+
+/** 打开 filters JSON 编辑弹框 */
+function openFiltersModal(path: number[]) {
+  filtersModalPath.value = [...path];
+  filtersModalOpen.value = true;
+  popoverOpenKey.value = null;
+}
+
+/** 保存 filters */
+function onFiltersSave(code: string) {
+  if (!filtersModalPath.value) return;
+  try {
+    const parsed = JSON.parse(code);
+    updateColumn(
+      filtersModalPath.value,
+      "filters",
+      Array.isArray(parsed) && parsed.length > 0 ? parsed : undefined,
+    );
+  } catch {
+    // JSON 解析失败，忽略
+  }
+  filtersModalPath.value = null;
+}
+
+/** onFilter 代码编辑弹框 */
+const onFilterModalPath = ref<number[] | null>(null);
+const onFilterModalOpen = ref(false);
+
+const onFilterModalCode = computed(() => {
+  if (!onFilterModalPath.value) return "";
+  const { arr, idx } = resolvePathFromTree(
+    columnsTree.value,
+    onFilterModalPath.value,
+  );
+  return (arr[idx]?.onFilter as string) ?? "";
+});
+
+/** 打开 onFilter 代码编辑弹框 */
+function openOnFilterModal(path: number[]) {
+  onFilterModalPath.value = [...path];
+  onFilterModalOpen.value = true;
+  popoverOpenKey.value = null;
+}
+
+/** 保存 onFilter 代码 */
+function onOnFilterSave(code: string) {
+  if (onFilterModalPath.value) {
+    updateColumn(onFilterModalPath.value, "onFilter", code || undefined);
+  }
+  onFilterModalPath.value = null;
+}
+
+/** sorter 代码编辑弹框 */
+const sorterModalPath = ref<number[] | null>(null);
+const sorterModalOpen = ref(false);
+
+const sorterModalCode = computed(() => {
+  if (!sorterModalPath.value) return "";
+  const { arr, idx } = resolvePathFromTree(
+    columnsTree.value,
+    sorterModalPath.value,
+  );
+  return (arr[idx]?.sorter as string) ?? "";
+});
+
+/** 打开 sorter 代码编辑弹框 */
+function openSorterModal(path: number[]) {
+  sorterModalPath.value = [...path];
+  sorterModalOpen.value = true;
+  popoverOpenKey.value = null;
+}
+
+/** 保存 sorter 代码 */
+function onSorterSave(code: string) {
+  if (sorterModalPath.value) {
+    updateColumn(sorterModalPath.value, "sorter", code || undefined);
+  }
+  sorterModalPath.value = null;
+}
+
+/** onCell 代码编辑弹框 */
+const onCellModalPath = ref<number[] | null>(null);
+const onCellModalOpen = ref(false);
+
+const onCellModalCode = computed(() => {
+  if (!onCellModalPath.value) return "";
+  const { arr, idx } = resolvePathFromTree(
+    columnsTree.value,
+    onCellModalPath.value,
+  );
+  return (arr[idx]?.onCell as string) ?? "";
+});
+
+/** 打开 onCell 代码编辑弹框 */
+function openOnCellModal(path: number[]) {
+  onCellModalPath.value = [...path];
+  onCellModalOpen.value = true;
+  popoverOpenKey.value = null;
+}
+
+/** 保存 onCell 代码 */
+function onOnCellSave(code: string) {
+  if (onCellModalPath.value) {
+    updateColumn(onCellModalPath.value, "onCell", code || undefined);
+  }
+  onCellModalPath.value = null;
 }
 
 /* ======== dataSource 代码编辑弹框 ======== */
@@ -366,6 +493,27 @@ function addChild(path: number[]) {
   updateNode(props.node.nodeId, { columns: tree });
 }
 
+/** 在指定节点下新增子分组 */
+function addChildGroup(path: number[]) {
+  const tree = cloneTree();
+  const { arr, idx } = resolvePathFromTree(tree, path);
+  const parent = arr[idx];
+  if (!parent.children) parent.children = [];
+  const childCount = parent.children.length;
+  const newGroup: ColumnInfo = {
+    title: `子分组${childCount + 1}`,
+    children: [
+      {
+        title: "子列1",
+        dataIndex: `sg${childCount + 1}_1`,
+        key: `sg${childCount + 1}_1`,
+      },
+    ],
+  };
+  parent.children.push(newGroup);
+  updateNode(props.node.nodeId, { columns: tree });
+}
+
 function resolvePathFromTree(
   tree: ColumnInfo[],
   path: number[],
@@ -423,7 +571,7 @@ function addGroup() {
 function updateColumn(path: number[], field: string, value: unknown) {
   const tree = cloneTree();
   const { arr, idx } = resolvePathFromTree(tree, path);
-  arr[idx] = { ...arr[idx], [field]: value || undefined };
+  arr[idx] = { ...arr[idx], [field]: value ?? undefined };
   updateNode(props.node.nodeId, { columns: tree });
 }
 
@@ -507,8 +655,8 @@ const alignOptions = [
 
 const fixedOptions = [
   { label: "无", value: "" },
-  { label: "left", value: "left" },
-  { label: "right", value: "right" },
+  { label: "start", value: "start" },
+  { label: "end", value: "end" },
 ];
 
 const placementOptions = [
@@ -848,6 +996,55 @@ const placementOptions = [
                   </a-button>
                 </div>
                 <div class="pop-field">
+                  <label class="pop-label">filters</label>
+                  <a-button size="small" @click="openFiltersModal(row.path)">
+                    <template #icon><CodeOutlined /></template>
+                    编辑 JSON
+                  </a-button>
+                </div>
+                <div class="pop-field">
+                  <label class="pop-label">onFilter</label>
+                  <a-button size="small" @click="openOnFilterModal(row.path)">
+                    <template #icon><CodeOutlined /></template>
+                    编辑代码
+                  </a-button>
+                </div>
+                <div class="pop-field pop-row">
+                  <label class="pop-label">多选筛选</label>
+                  <a-switch
+                    size="small"
+                    :checked="row.col.filterMultiple !== false"
+                    @change="
+                      (val: boolean) =>
+                        updateColumn(row.path, 'filterMultiple', val ? undefined : false)
+                    "
+                  />
+                </div>
+                <div class="pop-field">
+                  <label class="pop-label">筛选菜单模式</label>
+                  <a-select
+                    size="small"
+                    :value="row.col.filterMode ?? 'menu'"
+                    style="width: 100%"
+                    :options="[{ label: 'menu', value: 'menu' }, { label: 'tree', value: 'tree' }]"
+                    @change="
+                      (val: string) =>
+                        updateColumn(row.path, 'filterMode', val === 'menu' ? undefined : val)
+                    "
+                  />
+                </div>
+                <div class="pop-field pop-row">
+                  <label class="pop-label">筛选搜索</label>
+                  <a-switch
+                    size="small"
+                    :checked="!!row.col.filterSearch"
+                    @change="
+                      (val: boolean) =>
+                        updateColumn(row.path, 'filterSearch', val || undefined)
+                    "
+                  />
+                </div>
+                <div class="pop-field">
                   <label class="pop-label">宽度</label>
                   <a-input
                     size="small"
@@ -897,16 +1094,19 @@ const placementOptions = [
                     "
                   />
                 </div>
-                <div class="pop-field pop-row">
-                  <label class="pop-label">排序</label>
-                  <a-switch
-                    size="small"
-                    :checked="!!row.col.sorter"
-                    @change="
-                      (val: boolean) =>
-                        updateColumn(row.path, 'sorter', val || undefined)
-                    "
-                  />
+                <div class="pop-field">
+                  <label class="pop-label">排序(sorter)</label>
+                  <a-button size="small" @click="openSorterModal(row.path)">
+                    <template #icon><CodeOutlined /></template>
+                    编辑代码
+                  </a-button>
+                </div>
+                <div class="pop-field">
+                  <label class="pop-label">onCell</label>
+                  <a-button size="small" @click="openOnCellModal(row.path)">
+                    <template #icon><CodeOutlined /></template>
+                    编辑代码
+                  </a-button>
                 </div>
                 <div class="pop-divider" />
                 <div class="pop-field pop-row">
@@ -971,55 +1171,99 @@ const placementOptions = [
             </div>
           </a-popover>
 
-          <!-- 分组列：不可设置属性，可添加子列 -->
-          <div
+          <!-- 分组列：可编辑标题，可添加子列/子分组 -->
+          <a-popover
             v-else
-            class="column-row group-row"
-            :class="[
-              `depth-${Math.min(row.depth, 3)}`,
-              { selected: isSelected(row.path) },
-              getDropClass(row.path),
-            ]"
-            :data-has-children="true"
-            @click="selectColumn(row.path)"
-            @dragover="onDragOver($event, row.path)"
-            @dragleave="onDragLeave"
-            @drop="onDrop($event, row.path)"
-            @dragend="onDragEnd"
+            :open="popoverOpenKey === row.path.join('-')"
+            @update:open="(val: boolean) => !val && (popoverOpenKey = null)"
+            trigger="click"
+            placement="leftTop"
+            :overlay-style="{
+              width: '220px',
+              maxHeight: '380px',
+              overflowY: 'auto',
+            }"
           >
-            <span
-              class="drag-handle"
-              draggable="true"
-              @dragstart="onDragStart($event, row.path)"
-              @click.stop
+            <template #content>
+              <div class="pop-header">
+                <span class="pop-title">分组设置</span>
+                <span class="pop-subtitle">{{ row.col.title }}</span>
+              </div>
+              <div class="column-settings">
+                <div class="pop-field">
+                  <label class="pop-label">分组名称</label>
+                  <a-input
+                    size="small"
+                    :value="row.col.title"
+                    @change="
+                      (e: InputEvent) =>
+                        updateColumn(
+                          row.path,
+                          'title',
+                          (e.target as HTMLInputElement).value,
+                        )
+                    "
+                  />
+                </div>
+              </div>
+            </template>
+            <div
+              class="column-row group-row"
+              :class="[
+                `depth-${Math.min(row.depth, 3)}`,
+                { selected: isSelected(row.path) },
+                getDropClass(row.path),
+              ]"
+              :data-has-children="true"
+              @click="selectColumn(row.path)"
+              @dragover="onDragOver($event, row.path)"
+              @dragleave="onDragLeave"
+              @drop="onDrop($event, row.path)"
+              @dragend="onDragEnd"
             >
-              <HolderOutlined />
-            </span>
-            <span class="tree-lines">
               <span
-                v-for="(last, pi) in row.parentLast"
-                :key="pi"
-                class="tree-seg"
+                class="drag-handle"
+                draggable="true"
+                @dragstart="onDragStart($event, row.path)"
+                @click.stop
               >
-                <span v-if="!last" class="tree-vline" />
-                <span v-else class="tree-space" />
+                <HolderOutlined />
               </span>
-            </span>
-            <div class="col-body">
-              <span class="col-title group-title">{{ row.col.title }}</span>
+              <span class="tree-lines">
+                <span
+                  v-for="(last, pi) in row.parentLast"
+                  :key="pi"
+                  class="tree-seg"
+                >
+                  <span v-if="!last" class="tree-vline" />
+                  <span v-else class="tree-space" />
+                </span>
+              </span>
+              <div class="col-body">
+                <span class="col-title group-title">{{ row.col.title }}</span>
+              </div>
+              <div class="col-actions group-actions">
+                <span
+                  class="col-add"
+                  title="添加子列"
+                  @click.stop="addChild(row.path)"
+                  >+列</span
+                >
+                <span
+                  class="col-add"
+                  title="添加子分组"
+                  @click.stop="addChildGroup(row.path)"
+                  >+组</span
+                >
+                <span class="col-gear" @click.stop="openPopover(row.path)"
+                  >⚙</span
+                >
+                <span class="col-close" @click.stop="deleteColumn(row.path)"
+                  >×</span
+                >
+              </div>
             </div>
-            <div class="col-actions group-actions">
-              <span
-                class="col-add"
-                title="添加子列"
-                @click.stop="addChild(row.path)"
-                >+</span
-              >
-              <span class="col-close" @click.stop="deleteColumn(row.path)"
-                >×</span
-              >
-            </div>
-          </div>
+          </a-popover>
         </template>
       </div>
     </div>
@@ -1042,6 +1286,46 @@ const placementOptions = [
       language="json"
       hint='JSON 数组格式，例如：[{ "name": "张三", "age": 32 }]'
       @save="onDataSourceSave"
+    />
+
+    <!-- filters 代码编辑弹框 -->
+    <CodeEditorModal
+      v-model:open="filtersModalOpen"
+      title="编辑 filters"
+      :code="filtersModalCode"
+      language="json"
+      hint='JSON 数组格式，例如：[{ "text": "已启用", "value": "enabled" }]'
+      @save="onFiltersSave"
+    />
+
+    <!-- onFilter 代码编辑弹框 -->
+    <CodeEditorModal
+      v-model:open="onFilterModalOpen"
+      title="编辑 onFilter 代码"
+      :code="onFilterModalCode"
+      language="javascript"
+      hint="可用变量：value · record。返回 boolean（true 匹配，false 不匹配），函数体如 (value, record) => record.name.indexOf(value) === 0"
+      @save="onOnFilterSave"
+    />
+
+    <!-- sorter 代码编辑弹框 -->
+    <CodeEditorModal
+      v-model:open="sorterModalOpen"
+      title="编辑 sorter 代码"
+      :code="sorterModalCode"
+      language="javascript"
+      hint="可用变量：a · b（当前列两个记录的值）。返回 number（负数 a 在前，正数 b 在前，0 不变），函数体如 (a, b) => a - b"
+      @save="onSorterSave"
+    />
+
+    <!-- onCell 代码编辑弹框 -->
+    <CodeEditorModal
+      v-model:open="onCellModalOpen"
+      title="编辑 onCell 代码"
+      :code="onCellModalCode"
+      language="javascript"
+      hint="可用变量：record · rowIndex。返回对象设置单元格属性（style/class/colSpan 等），函数体如 (record, rowIndex) => ({ style: { color: 'red' } })"
+      @save="onOnCellSave"
     />
   </div>
 </template>

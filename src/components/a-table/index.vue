@@ -64,28 +64,76 @@ const rawColumns = computed(
 );
 
 /**
- * 包装 columns：
- * 1. 剥离 render 字符串，转为 __renderCode 供 #bodyCell 模板使用
- * 2. 有 bodyCell_* 插槽的列同时剥离 __renderCode，插槽优先
- * 3. 其余列原样透传
+ * 递归包装单列：
+ * 1. 剥离 render 字符串 → __renderCode
+ * 2. 剥离 onFilter/sorter 字符串，编译为函数
+ * 3. 有 bodyCell_* 插槽的列剥离 __renderCode，插槽优先
+ * 4. 有 children 时递归处理子列
+ */
+function wrapColumn(col: Record<string, unknown>): Record<string, unknown> {
+  const slotKey = `bodyCell_${col.key || col.dataIndex}`;
+  const hasSlot = slotKey in slots;
+
+  const { render: _render, onFilter: _onFilter, sorter: _sorter, onCell: _onCell, children, ...rest } = col;
+
+  let extra: Record<string, unknown> = {};
+
+  // 编译 onFilter 字符串为函数
+  if (typeof _onFilter === "string" && _onFilter.trim()) {
+    try {
+      extra.onFilter = new Function("value", "record", `return (${_onFilter})(value, record)`);
+    } catch (e: unknown) {
+      console.warn("[a-table] onFilter compilation error:", (e as Error).message);
+    }
+  }
+
+  // 编译 sorter 字符串为函数
+  if (typeof _sorter === "string" && _sorter.trim()) {
+    try {
+      extra.sorter = new Function("a", "b", `return (${_sorter})(a, b)`);
+    } catch (e: unknown) {
+      console.warn("[a-table] sorter compilation error:", (e as Error).message);
+    }
+  }
+
+  // 编译 onCell 字符串为函数
+  if (typeof _onCell === "string" && _onCell.trim()) {
+    try {
+      extra.onCell = new Function("record", "rowIndex", `return (${_onCell})(record, rowIndex)`);
+    } catch (e: unknown) {
+      console.warn("[a-table] onCell compilation error:", (e as Error).message);
+    }
+  }
+
+  // 递归处理子列
+  const wrappedChildren =
+    Array.isArray(children) && children.length > 0
+      ? (children as Record<string, unknown>[]).map(wrapColumn)
+      : undefined;
+
+  if (hasSlot) {
+    return { ...rest, ...extra, ...(wrappedChildren ? { children: wrappedChildren } : {}) };
+  }
+
+  let result = { ...rest, ...extra };
+
+  if (typeof _render === "string" && _render.trim()) {
+    result = { ...result, __renderCode: _render };
+  }
+
+  if (wrappedChildren) {
+    result = { ...result, children: wrappedChildren };
+  }
+
+  return result;
+}
+
+/**
+ * 包装 columns 数组，递归处理所有层级
  */
 const wrappedColumns = computed(() => {
   if (!Array.isArray(rawColumns.value)) return undefined;
-
-  return rawColumns.value.map((col: Record<string, unknown>) => {
-    const slotKey = `bodyCell_${col.key || col.dataIndex}`;
-    const hasSlot = slotKey in slots;
-
-    const { render: _render, ...rest } = col;
-
-    if (hasSlot) return rest;
-
-    if (typeof _render === "string" && _render.trim()) {
-      return { ...rest, __renderCode: _render };
-    }
-
-    return rest;
-  });
+  return rawColumns.value.map(wrapColumn);
 });
 
 
